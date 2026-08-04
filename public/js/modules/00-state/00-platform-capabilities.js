@@ -4,10 +4,28 @@ var platformCapabilityState = {
   platformId: 'unknown',
   capabilities: {}
 };
+var platformCapabilitySubscribers = [];
 
 function platformHasCapability(name) {
   return platformCapabilityState.ready === true
     && platformCapabilityState.capabilities[name] === true;
+}
+
+function subscribePlatformCapability(name, callback) {
+  if (typeof name !== 'string' || typeof callback !== 'function') return function () {};
+  var subscriber = { name: name, callback: callback };
+  platformCapabilitySubscribers.push(subscriber);
+  if (platformCapabilityState.ready) callback(platformHasCapability(name), platformCapabilityState);
+  return function () {
+    var index = platformCapabilitySubscribers.indexOf(subscriber);
+    if (index >= 0) platformCapabilitySubscribers.splice(index, 1);
+  };
+}
+
+function notifyPlatformCapabilitySubscribers() {
+  platformCapabilitySubscribers.slice().forEach(function (subscriber) {
+    subscriber.callback(platformHasCapability(subscriber.name), platformCapabilityState);
+  });
 }
 
 function platformCapabilityInteractiveElements(element) {
@@ -64,6 +82,7 @@ function applyPlatformCapabilities(payload) {
   document.documentElement.setAttribute('data-platform', platformCapabilityState.platform);
   document.documentElement.setAttribute('data-platform-ready', platformCapabilityState.ready ? 'true' : 'false');
   applyPlatformCapabilityVisibility();
+  notifyPlatformCapabilitySubscribers();
   window.dispatchEvent(new CustomEvent('mineradio:platform-capabilities', {
     detail: {
       platform: platformCapabilityState.platform,

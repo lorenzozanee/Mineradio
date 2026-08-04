@@ -11,7 +11,7 @@
     "start": "electron .",
     "test": "npm run test:shared && npm run test:platform && npm run test:build",
     "test:shared": "node --test tests/shared/injected-platform-dependencies.test.js tests/shared/ipc-payload-validation.test.js tests/shared/external-navigation-validation.test.js tests/contracts/server-local-data-paths.test.js tests/contracts/path-identity.test.js tests/startup-qa-userdata-isolation.test.js",
-    "test:platform": "node --test tests/contracts/platform-contract.test.js tests/contracts/platform-ipc-boundary.test.js tests/contracts/platform-renderer-capabilities.test.js tests/contracts/renderer-platform-ux.test.js tests/platform/windows/platform.test.js tests/platform/macos/platform.test.js tests/platform/macos/application-menu.test.js tests/platform/macos/shortcuts.test.js tests/platform/macos/system-memory.test.js",
+    "test:platform": "node --test tests/contracts/platform-contract.test.js tests/contracts/platform-ipc-boundary.test.js tests/contracts/platform-renderer-capabilities.test.js tests/contracts/renderer-platform-ux.test.js tests/contracts/wallpaper-engine-renderer-capability.test.js tests/platform/windows/platform.test.js tests/platform/macos/platform.test.js tests/platform/macos/application-menu.test.js tests/platform/macos/shortcuts.test.js tests/platform/macos/system-memory.test.js",
     "test:smoke:macos": "node --test tests/smoke/macos/main-entry-smoke.test.js && node tests/smoke/macos/main-entry-smoke.js",
     "test:smoke:macos:package": "node --test tests/smoke/macos/packaged-app-smoke.test.js && node tests/smoke/macos/packaged-app-smoke.js",
     "test:build": "node --test tests/build/ci-workflows.test.js tests/build/macos-build.test.js",

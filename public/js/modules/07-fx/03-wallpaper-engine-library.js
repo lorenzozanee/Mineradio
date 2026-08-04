@@ -2316,4 +2316,20 @@ function initializeWallpaperEngineLibrary() {
   }, 120);
 }
 
-initializeWallpaperEngineLibrary();
+var wallpaperEngineLibraryInitialized = false;
+
+function applyWallpaperEngineCapability(available) {
+  if (available !== true) {
+    wallpaperEngineSelection.active = false;
+    saveWallpaperEngineSelection();
+    updateWallpaperEngineEntryUi('当前平台不支持 Wallpaper Engine');
+    return;
+  }
+  if (wallpaperEngineLibraryInitialized) return;
+  wallpaperEngineLibraryInitialized = true;
+  initializeWallpaperEngineLibrary();
+}
+
+if (typeof subscribePlatformCapability === 'function') {
+  subscribePlatformCapability('wallpaperEngine', applyWallpaperEngineCapability);
+}

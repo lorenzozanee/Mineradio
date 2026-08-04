@@ -82,3 +82,42 @@ test('renderer reveals verified native controls on Windows', async () => {
   assert.equal(harness.elements[2].hidden, false);
   assert.equal(harness.documentElement.attributes['data-platform'], 'win32');
 });
+
+test('capability subscribers fail closed, receive the resolved state, and unsubscribe cleanly', function() {
+  const harness = createHarness({ fullDesktopMode: false, wallpaperEngine: false, tray: false });
+  const calls = [];
+  const unsubscribe = harness.context.subscribePlatformCapability('wallpaperEngine', function(available) {
+    calls.push(available);
+  });
+  assert.deepEqual(calls, []);
+  harness.context.applyPlatformCapabilities({
+    ok: true,
+    platform: 'darwin',
+    platformId: 'macos',
+    capabilities: { fullDesktopMode: false, wallpaperEngine: false, tray: false },
+  });
+  assert.deepEqual(calls, [false]);
+  harness.context.applyPlatformCapabilities({
+    ok: true,
+    platform: 'win32',
+    platformId: 'windows',
+    capabilities: { fullDesktopMode: true, wallpaperEngine: true, tray: true },
+  });
+  assert.deepEqual(calls, [false, true]);
+  unsubscribe();
+  harness.context.applyPlatformCapabilities(null);
+  assert.deepEqual(calls, [false, true]);
+});
+
+test('late capability subscribers receive the current resolved unsupported state immediately', function() {
+  const harness = createHarness({ fullDesktopMode: false, wallpaperEngine: false, tray: false });
+  harness.context.applyPlatformCapabilities({
+    ok: true,
+    platform: 'darwin',
+    platformId: 'macos',
+    capabilities: { fullDesktopMode: false, wallpaperEngine: false, tray: false },
+  });
+  const calls = [];
+  harness.context.subscribePlatformCapability('wallpaperEngine', function(available) { calls.push(available); });
+  assert.deepEqual(calls, [false]);
+});
