@@ -62,6 +62,39 @@ test('macOS unsupported native desktop implementations are bounded and side-effe
   assert.equal(desktopMode.getStatus('fixture').enabled, false);
 });
 
+test('macOS unsupported native desktop cleanup is idempotently successful', async function() {
+  const features = loadNativeDesktopFeatures({ nodePlatform: 'darwin' });
+  const library = new features.WallpaperEngineLibrary();
+  const runtime = new features.WallpaperEngineRuntime();
+  const desktopMode = new features.FullDesktopModeRuntime();
+
+  const libraryCleanup = library.dispose();
+  assert.equal(libraryCleanup.ok, true);
+  assert.equal(libraryCleanup.unsupported, true);
+  assert.equal(libraryCleanup.operation, 'dispose');
+
+  for (const cleanup of [
+    await runtime.dispose(),
+    await runtime.dispose(),
+  ]) {
+    assert.equal(cleanup.ok, true);
+    assert.equal(cleanup.unsupported, true);
+    assert.equal(cleanup.stopped, true);
+    assert.equal(cleanup.active, false);
+    assert.equal(cleanup.pending, false);
+  }
+
+  for (const cleanup of [
+    await desktopMode.dispose(),
+    await desktopMode.dispose(),
+  ]) {
+    assert.equal(cleanup.ok, true);
+    assert.equal(cleanup.unsupported, true);
+    assert.equal(cleanup.enabled, false);
+    assert.equal(cleanup.interactive, false);
+  }
+});
+
 test('unknown native desktop feature platforms fail at the composition root', function() {
   assert.throws(function() {
     loadNativeDesktopFeatures({ nodePlatform: 'linux' });

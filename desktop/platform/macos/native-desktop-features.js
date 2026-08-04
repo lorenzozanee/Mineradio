@@ -6,6 +6,14 @@ function unsupported(feature, operation) {
   return unsupportedResult('darwin', feature, operation);
 }
 
+function cleanUnsupportedCleanup(feature, operation, extra = {}) {
+  return {
+    ...unsupported(feature, operation),
+    ...extra,
+    ok: true,
+  };
+}
+
 class UnsupportedWallpaperEngineLibrary {
   installProtocol() { return unsupported('wallpaperEngine', 'installProtocol'); }
   list() { return Promise.resolve(unsupported('wallpaperEngine', 'list')); }
@@ -13,7 +21,7 @@ class UnsupportedWallpaperEngineLibrary {
   addManualRoot() { return Promise.resolve(unsupported('wallpaperEngine', 'addManualRoot')); }
   addManualProjectFile() { return Promise.resolve(unsupported('wallpaperEngine', 'addManualProjectFile')); }
   removeManualRoot() { return Promise.resolve(unsupported('wallpaperEngine', 'removeManualRoot')); }
-  dispose() { return unsupported('wallpaperEngine', 'dispose'); }
+  dispose() { return cleanUnsupportedCleanup('wallpaperEngine', 'dispose'); }
 }
 
 class UnsupportedWallpaperEngineRuntime {
@@ -35,7 +43,13 @@ class UnsupportedWallpaperEngineRuntime {
   updateGlassSurface() { return unsupported('wallpaperEngine', 'updateGlassSurface'); }
   noteHostPointerActivity() { return unsupported('wallpaperEngine', 'noteHostPointerActivity'); }
   revealWorkshop() { return Promise.resolve(unsupported('wallpaperEngine', 'revealWorkshop')); }
-  dispose() { return Promise.resolve(unsupported('wallpaperEngine', 'dispose')); }
+  dispose() {
+    return Promise.resolve(cleanUnsupportedCleanup('wallpaperEngine', 'dispose', {
+      stopped: true,
+      active: false,
+      pending: false,
+    }));
+  }
 }
 
 class UnsupportedFullDesktopModeRuntime {
@@ -60,7 +74,12 @@ class UnsupportedFullDesktopModeRuntime {
   ensureIconLayerOrder() { return Promise.resolve(unsupported('fullDesktopMode', 'ensureIconLayerOrder')); }
   updateIconShields() { return Promise.resolve(unsupported('fullDesktopMode', 'updateIconShields')); }
   updatePointerRoute() { return Promise.resolve(unsupported('fullDesktopMode', 'updatePointerRoute')); }
-  dispose() { return Promise.resolve(unsupported('fullDesktopMode', 'dispose')); }
+  dispose() {
+    return Promise.resolve(cleanUnsupportedCleanup('fullDesktopMode', 'dispose', {
+      enabled: false,
+      interactive: false,
+    }));
+  }
 }
 
 function registerWallpaperEngineScheme() {

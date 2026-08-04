@@ -69,6 +69,9 @@ module.exports = function createMacosPlatform(options = {}) {
     window: {
       mainOptions: () => ({
         frame: true,
+        transparent: false,
+        backgroundColor: '#000000',
+        fullscreenable: true,
         titleBarStyle: 'hiddenInset',
         trafficLightPosition: { x: 18, y: 18 },
       }),
