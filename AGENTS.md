@@ -4,6 +4,8 @@
 
 - Treat the current product as Windows x64 only. The active migration scope is one shared business-code mainline plus Windows x64 and Apple Silicon macOS (`arm64`) platform implementations.
 - Deliver an Apple Silicon DMG without regressing the Windows EXE. Do not create separate long-lived Windows and macOS product branches.
+- Keep migration work on its candidate branch until every native-build, signing, install-smoke, and independent QA gate passes for one exact SHA; never merge into `main` merely because cross-platform contract CI is green.
+- Treat `main` as the protected Windows release baseline during migration. Do not use an intermediate `port/*` branch as a Windows rollback or merge target without an explicit ancestry and diff review.
 - Do not add Linux or Intel macOS implementations, placeholders, build jobs, or speculative abstractions.
 - Remove replaced internal paths and update every caller and test. Do not add compatibility exports, fallback imports, duplicate modules, or migrations for obsolete internal paths.
 - Preserve unrelated work. Never commit user data, credentials, logs, caches, installers, or generated build output.
@@ -120,6 +122,7 @@ tests/
 - Run shared and contract tests on both target operating systems. Run Windows platform tests and EXE smoke on Windows; run macOS platform tests and DMG smoke on Apple Silicon macOS. Mocks on another OS do not satisfy target-OS validation.
 - Isolate Electron smoke `userData`, session data, cache, credentials, and provider state in a disposable owned directory. Never read, overwrite, migrate, or delete the real user profile during tests.
 - Record exact commands, host OS/architecture, Node/Electron versions, pass/fail counts, skipped tests, and artifacts. Give every required manual test an explicit written reason and result.
+- When a macOS-only check exposes a path, line-ending, or filesystem semantic difference, normalize the fixture or assertion in the shared/build test layer; do not weaken or rewrite Windows-native tests to manufacture a macOS pass.
 - Introduce dual-platform CI as part of the migration. Build formal EXE and DMG artifacts only on native runners; verify that the macOS runner and output are `arm64`.
 
 ## Upstream Tag synchronization
