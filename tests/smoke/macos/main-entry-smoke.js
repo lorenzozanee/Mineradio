@@ -291,6 +291,7 @@ module.exports = {
   resolveMacosSmokePrerequisite,
   runBoundedProcess,
   runMacosMainEntrySmoke,
+  writeCacheSettings,
 };
 
 if (require.main === module) {

@@ -39,6 +39,7 @@ Run commands from the repository root.
 | Platform contract tests | `npm run test:platform` | Runs the shared contract plus Windows/macOS adapter, IPC boundary, and renderer capability tests. |
 | Aggregate shared/contract/build tests | `npm test` | Runs `test:shared`, `test:platform`, and `test:build`; it does not substitute for target-OS Electron or installer smoke. |
 | macOS arm64 Electron smoke | `npm run test:smoke:macos` | On Apple Silicon with installed dependencies, runs smoke helper tests and the isolated real main entry; other hosts skip explicitly. |
+| macOS packaged-app smoke | `npm run test:smoke:macos:package` | After a macOS build, launches the packaged arm64 app with disposable user data and verifies startup, shutdown, and permission metadata behavior. |
 | Build/CI contract tests | `npm run test:build` | Verifies macOS builder/signing configuration and GitHub Actions security boundaries without using credentials. |
 | macOS signed DMG | `npm run build:mac` | Apple Silicon only; requires Developer ID and App Store Connect API credentials and fails closed if unavailable. |
 | macOS local unsigned DMG | `npm run build:mac:unsigned` | Explicit local validation only; output goes to `dist-macos/` and is never a release candidate. |

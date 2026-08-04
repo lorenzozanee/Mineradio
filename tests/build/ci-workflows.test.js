@@ -9,6 +9,10 @@ function readWorkflow(name) {
   return fs.readFileSync(path.join(__dirname, '../../.github/workflows', name), 'utf8');
 }
 
+function readPackage() {
+  return JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), 'utf8'));
+}
+
 test('untrusted pull requests run secret-free contracts on both target operating systems', function() {
   const workflow = readWorkflow('cross-platform-ci.yml');
   assert.match(workflow, /^\s*pull_request:\s*$/m);
@@ -29,6 +33,8 @@ test('native packages only build through manual dispatch and protected signing e
   assert.match(workflow, /environment: release-signing/);
   assert.match(workflow, /APPLE_API_KEY_P8: \$\{\{ secrets\.APPLE_API_KEY_P8 \}\}/);
   assert.match(workflow, /node build\/macos\/validate-dmg\.js/);
-  assert.match(workflow, /--mac dmg --arm64 --publish never/);
+  assert.match(workflow, /npm run build:mac/);
+  assert.match(workflow, /npm run test:smoke:macos:package/);
+  assert.match(readPackage().scripts['build:mac'], /--mac dmg --arm64 --publish never/);
   assert.doesNotMatch(workflow, /pull_request_target/);
 });

@@ -13,6 +13,7 @@ Mineradio 的 macOS 分发目标只有 Apple Silicon (`arm64`) DMG。Windows x64
 ```bash
 npm run build:mac:unsigned
 npm run validate:mac:unsigned
+npm run test:smoke:macos:package
 ```
 
 `MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD` 只有精确值 `1` 才生效。未设置时 `forceCodeSigning` 为真，缺少 Developer ID 身份会使构建失败；它不是发布构建的降级路径。

@@ -95,7 +95,10 @@ jobs:
           APPLE_API_KEY: ${{ runner.temp }}/mineradio-notary-api-key.p8
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-        run: npx electron-builder --config electron-builder.macos.js --mac dmg --arm64 --publish never
+        run: npm run build:mac
+      - name: Smoke packaged macOS application with isolated data
+        shell: bash
+        run: npm run test:smoke:macos:package
       - name: Validate DMG architecture, contents, signature, and ticket
         shell: bash
         run: |
