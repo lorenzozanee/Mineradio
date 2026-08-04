@@ -4785,6 +4785,7 @@ function configureLocalServerEnvironment(port) {
   process.env.HOST = '127.0.0.1';
   process.env.PORT = String(port);
   process.env.MINERADIO_BEAT_CACHE_DIR = cacheSettings.beatmapsPath;
+  process.env.MINERADIO_USER_DATA = STABLE_USER_DATA_PATH;
   process.env.CUEFIELD_FEEDBACK_FILE = path.join(STABLE_USER_DATA_PATH, 'cuefield-feedback.jsonl');
   process.env.COOKIE_FILE = path.join(STABLE_USER_DATA_PATH, '.cookie');
   process.env.QQ_COOKIE_FILE = path.join(STABLE_USER_DATA_PATH, '.qq-cookie');

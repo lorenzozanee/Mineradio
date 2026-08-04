@@ -133,6 +133,7 @@ const {
   readCuefieldFeedbackStats,
 } = require('./cuefield/feedback-log');
 const { planCuefieldTransitionFromCache } = require('./cuefield/mineradio-bridge');
+const { resolveServerLocalDataPaths } = require('./desktop/shared/local-data-paths');
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -150,13 +151,14 @@ const LOGIN_EASTER_EGG_PROTECTED_ROUTES = new Set([
   '/api/spotify/config',
 ]);
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-const DEFAULT_COOKIE_FILE = path.join(__dirname, '.cookie');
-const DEFAULT_QQ_COOKIE_FILE = path.join(__dirname, '.qq-cookie');
-const DEFAULT_KUGOU_COOKIE_FILE = path.join(__dirname, '.kugou-cookie');
-const DEFAULT_QISHUI_COOKIE_FILE = path.join(__dirname, '.qishui-cookie');
-const BEATMAP_CACHE_DIR = process.env.MINERADIO_BEAT_CACHE_DIR || 'D:\\MineradioCache\\beatmaps';
-const CUEFIELD_FEEDBACK_FILE = process.env.CUEFIELD_FEEDBACK_FILE || path.join(__dirname, 'data', 'cuefield-feedback.jsonl');
-const LISTEN_SYNC_JOURNAL_FILE = process.env.MINERADIO_LISTEN_SYNC_FILE || path.join(__dirname, 'data', 'listen-sync-journal.json');
+const SERVER_LOCAL_DATA_PATHS = resolveServerLocalDataPaths();
+const DEFAULT_COOKIE_FILE = SERVER_LOCAL_DATA_PATHS.neteaseCookie;
+const DEFAULT_QQ_COOKIE_FILE = SERVER_LOCAL_DATA_PATHS.qqCookie;
+const DEFAULT_KUGOU_COOKIE_FILE = SERVER_LOCAL_DATA_PATHS.kugouCookie;
+const DEFAULT_QISHUI_COOKIE_FILE = SERVER_LOCAL_DATA_PATHS.qishuiCookie;
+const BEATMAP_CACHE_DIR = SERVER_LOCAL_DATA_PATHS.beatmapCache;
+const CUEFIELD_FEEDBACK_FILE = SERVER_LOCAL_DATA_PATHS.cuefieldFeedback;
+const LISTEN_SYNC_JOURNAL_FILE = SERVER_LOCAL_DATA_PATHS.listenSyncJournal;
 const LISTEN_SYNC_JOURNAL_LIMIT = 600;
 const APP_PACKAGE = readPackageInfo();
 const APP_VERSION = process.env.MINERADIO_VERSION || APP_PACKAGE.version || '2.1.0';
