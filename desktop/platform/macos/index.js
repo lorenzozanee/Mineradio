@@ -2,6 +2,7 @@
 
 const { createPlatformContract, unsupportedResult } = require('../contract');
 const { installApplicationMenu } = require('./application-menu');
+const { createMacosGlobalShortcutService } = require('./shortcuts');
 
 function configureMainWindow(win) {
   if (!win || typeof win.setWindowButtonVisibility !== 'function') return { ok: true };
@@ -28,6 +29,10 @@ function configureDesktopLyricsWindow(win) {
 
 module.exports = function createMacosPlatform(options = {}) {
   const desktopModeUnsupported = operation => unsupportedResult('darwin', 'fullDesktopMode', operation);
+  const shortcuts = createMacosGlobalShortcutService({
+    globalShortcut: options.globalShortcut,
+    onAction: options.onShortcutAction,
+  });
   return createPlatformContract({
     id: 'macos',
     nodePlatform: 'darwin',
@@ -54,6 +59,7 @@ module.exports = function createMacosPlatform(options = {}) {
     runtime: {
       chromiumSwitches: () => [],
     },
+    shortcuts,
     window: {
       mainOptions: () => ({
         frame: true,

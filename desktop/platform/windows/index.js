@@ -20,6 +20,10 @@ function configureDesktopLyricsWindow(win) {
 }
 
 module.exports = function createWindowsPlatform(options = {}) {
+  const shortcuts = options.shortcuts || {
+    configure: () => ({ ok: true, results: [] }),
+    cleanup: successfulNoop,
+  };
   return createPlatformContract({
     id: 'windows',
     nodePlatform: 'win32',
@@ -37,6 +41,7 @@ module.exports = function createWindowsPlatform(options = {}) {
     runtime: {
       chromiumSwitches: () => [['use-angle', 'd3d11']],
     },
+    shortcuts,
     window: {
       mainOptions: () => options.appIcon ? { icon: options.appIcon } : {},
       configureMainWindow: successfulNoop,

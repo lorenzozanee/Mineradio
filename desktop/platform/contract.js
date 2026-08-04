@@ -58,6 +58,7 @@ function createPlatformContract(options = {}) {
   }
   assertService('lifecycle', options.lifecycle, ['onReady', 'onActivate', 'cleanup']);
   assertService('runtime', options.runtime, ['chromiumSwitches']);
+  assertService('shortcuts', options.shortcuts, ['configure', 'cleanup']);
   assertService('window', options.window, [
     'mainOptions',
     'configureMainWindow',
@@ -82,6 +83,10 @@ function createPlatformContract(options = {}) {
   const runtime = Object.freeze({
     chromiumSwitches: options.runtime.chromiumSwitches,
   });
+  const shortcuts = Object.freeze({
+    configure: options.shortcuts.configure,
+    cleanup: options.shortcuts.cleanup,
+  });
   const desktopMode = Object.freeze({
     enable: options.desktopMode.enable,
     disable: options.desktopMode.disable,
@@ -94,6 +99,7 @@ function createPlatformContract(options = {}) {
     capabilities,
     lifecycle,
     runtime,
+    shortcuts,
     window,
     desktopMode,
     supports(capability) {

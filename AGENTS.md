@@ -17,8 +17,8 @@
 | Preload | `desktop/preload.js` exposes `window.desktopWindow`; `desktop/overlay-preload.js` exposes `window.desktopOverlay`. Main/overlay windows use `contextIsolation: true`, `nodeIntegration: false`, and currently `sandbox: false`. Login windows use the sandbox. |
 | Renderer | `public/index.html` loads vendored classic scripts and `public/js/index-loader.js`, which concatenates ordered files under `public/js/modules/`. There is no renderer bundler or module loader. |
 | Shared-looking code | `server.js`, provider APIs, `cuefield/`, `dj-analyzer.js`, most renderer modules, `desktop/local-music-library.js`, and `desktop/login-easter-egg-gate.js`. Audit hidden OS assumptions before classifying them as shared. |
-| Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/system-memory.js`, `desktop/app-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
-| macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, and explicit unsupported desktop-mode results. No entitlements, icon set, DMG configuration, signing, or notarization workflow exists yet. |
+| Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/system-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
+| macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, normalized global shortcuts, and explicit unsupported desktop-mode results. No entitlements, icon set, DMG configuration, signing, or notarization workflow exists yet. |
 | Tests | Existing tests remain mostly flat and mix `node:test` with self-running assertion scripts. Platform contract tests now live under `tests/contracts/` and `tests/platform/`. `scripts/quick-check.js` still orchestrates selected tests plus extensive source guards. |
 | Automation | `test:shared` and `test:platform` exist. No `.github/workflows/`, standard aggregate `test` script, release script, or macOS build script exists. |
 | Package manager | npm with `package-lock.json` lockfile version 3. No Node version, lint, formatter, or TypeScript configuration is pinned. |
@@ -35,7 +35,7 @@ Run commands from the repository root.
 | Install | `npm install` | Documented in `README.md`; updates must keep `package-lock.json` synchronized. |
 | Run | `npm start` | Runs `electron .`; current application support is Windows. |
 | Fast/static check | `node scripts/quick-check.js` | Runs syntax, selected tests, and source guards; it skips Electron runtime smoke. |
-| Shared dependency-boundary tests | `npm run test:shared` | Runs platform-independent dependency-injection tests without starting Electron. |
+| Shared behavior tests | `npm run test:shared` | Runs platform-independent dependency-injection, bounded IPC payload, and external-navigation policy tests without starting Electron. |
 | Platform contract tests | `npm run test:platform` | Runs the shared contract plus Windows/macOS adapter, IPC boundary, and renderer capability tests. |
 | Windows fast-check wrapper | `quick-check.bat` | Calls the same static check and pauses unless configured otherwise. |
 | Windows full smoke | `quick-check.bat full` or `node scripts/quick-check.js --electron` | Requires installed dev dependencies and Windows. The checker currently resolves only `node_modules/electron/dist/electron.exe`; real main-entry recovery is also Windows-only. |

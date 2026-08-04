@@ -7,6 +7,10 @@ const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
 const { createPlatform } = require('./platform');
 const { registerPlatformIpc } = require('./platform/ipc');
+const {
+  createExternalNavigationPolicy,
+  validateExternalNavigation,
+} = require('./shared/external-navigation-validation');
 const systemMemory = require('./system-memory');
 const {
   WallpaperEngineLibrary,
@@ -130,10 +134,28 @@ const KUGOU_LOGIN_PARTITION = 'persist:mineradio-kugou-login';
 const KUGOU_LOGIN_URL = 'https://www.kugou.com/';
 const KUGOU_LOGIN_WARMUP_URL = 'https://www.kugou.com/newuc/user/uc/type=edit';
 const SPOTIFY_LOGIN_PARTITION = 'persist:mineradio-spotify-login';
+const MAIN_EXTERNAL_NAVIGATION_POLICY = createExternalNavigationPolicy({
+  allowedHosts: [
+    'developer.spotify.com',
+    'github.com',
+    'pan.baidu.com',
+    'pan.quark.cn',
+    'xxhuber.lanzout.com',
+  ],
+});
 const platform = createPlatform({
   app,
   appIcon: APP_ICON_ICO,
+  globalShortcut,
   Menu,
+  onShortcutAction: sendGlobalHotkeyAction,
+  shortcuts: {
+    configure: configureMineradioGlobalHotkeys,
+    cleanup: () => {
+      unregisterMineradioGlobalHotkeys();
+      return { ok: true };
+    },
+  },
   desktopMode: {
     enable: createWallpaperWindow,
     disable: closeWallpaperWindow,
@@ -4513,7 +4535,7 @@ ipcMain.handle('desktop-window-set-close-behavior', (_event, behavior) => {
 });
 
 ipcMain.handle('mineradio-hotkeys-configure-global', (_event, bindings) => {
-  return configureMineradioGlobalHotkeys(bindings);
+  return platform.shortcuts.configure(bindings);
 });
 
 function loginCookieExportMeta(provider) {
@@ -4652,11 +4674,9 @@ ipcMain.handle('spotify-music-clear-login', async () => {
 ipcMain.handle('mineradio-open-update-page', async (event, value) => {
   try {
     if (!isTrustedMainWindowIpc(event)) return { ok: false, error: 'UNTRUSTED_SENDER' };
-    const target = String(value || '').trim();
-    if (!target || target.length > 2048) return { ok: false, error: 'INVALID_UPDATE_URL' };
-    const parsed = new URL(target);
-    if (parsed.protocol !== 'https:') return { ok: false, error: 'INVALID_UPDATE_URL' };
-    await shell.openExternal(parsed.href);
+    const target = validateExternalNavigation(value, MAIN_EXTERNAL_NAVIGATION_POLICY);
+    if (!target.ok) return { ok: false, error: 'INVALID_UPDATE_URL' };
+    await shell.openExternal(target.url);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message || 'OPEN_UPDATE_PAGE_FAILED' };
@@ -5296,13 +5316,15 @@ async function createWindowOnce() {
   }, STARTUP_SHOW_WATCHDOG_MS);
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    const target = validateExternalNavigation(url, MAIN_EXTERNAL_NAVIGATION_POLICY);
+    if (target.ok) shell.openExternal(target.url).catch(() => {});
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => {
     if (isTrustedMainDocumentUrl(url)) return;
     event.preventDefault();
-    if (/^https?:\/\//i.test(String(url || ''))) shell.openExternal(url).catch(() => {});
+    const target = validateExternalNavigation(url, MAIN_EXTERNAL_NAVIGATION_POLICY);
+    if (target.ok) shell.openExternal(target.url).catch(() => {});
   });
   win.webContents.on('did-start-navigation', (_event, url, isInPlace, isMainFrame) => {
     if (!isMainFrame || isInPlace || !isTrustedMainDocumentUrl(url)) return;
@@ -5631,7 +5653,7 @@ if (!gotSingleInstanceLock) {
     wallpaperEngineLibrary.dispose();
     stopMemoryAutoTimer();
     unregisterFullDesktopEscapeShortcut();
-    unregisterMineradioGlobalHotkeys();
+    platform.shortcuts.cleanup();
     closeDesktopLyricsWindow();
     if (localServer && localServer.close) localServer.close();
     if (tray) {

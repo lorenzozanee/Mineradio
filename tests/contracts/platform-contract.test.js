@@ -40,6 +40,13 @@ function runtimeService() {
   };
 }
 
+function shortcutService() {
+  return {
+    configure: () => ({ ok: true, results: [] }),
+    cleanup: () => ({ ok: true }),
+  };
+}
+
 test('platform contract exposes a bounded serializable capability snapshot', () => {
   const platform = createPlatformContract({
     id: 'fixture',
@@ -47,6 +54,7 @@ test('platform contract exposes a bounded serializable capability snapshot', () 
     capabilities: { fullDesktopMode: false, wallpaperEngine: false, tray: false },
     lifecycle: lifecycleService(false),
     runtime: runtimeService(),
+    shortcuts: shortcutService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   });
@@ -67,6 +75,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     capabilities: { linuxDesktopMode: true },
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
+    shortcuts: shortcutService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /Unknown platform capabilities/);
@@ -76,6 +85,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     capabilities: {},
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
+    shortcuts: shortcutService(),
     window: windowService(),
     desktopMode: {},
   }), /desktopMode\.enable/);
@@ -85,6 +95,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     capabilities: {},
     lifecycle: {},
     runtime: runtimeService(),
+    shortcuts: shortcutService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /lifecycle\.onReady/);
@@ -94,6 +105,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     capabilities: {},
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
+    shortcuts: shortcutService(),
     window: {},
     desktopMode: desktopModeService(),
   }), /window\.mainOptions/);
@@ -103,9 +115,20 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     capabilities: {},
     lifecycle: lifecycleService(),
     runtime: {},
+    shortcuts: shortcutService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /runtime\.chromiumSwitches/);
+  assert.throws(() => createPlatformContract({
+    id: 'fixture',
+    nodePlatform: 'darwin',
+    capabilities: {},
+    lifecycle: lifecycleService(),
+    runtime: runtimeService(),
+    shortcuts: {},
+    window: windowService(),
+    desktopMode: desktopModeService(),
+  }), /shortcuts\.configure/);
 });
 
 test('platform lifecycle and window services preserve adapter behavior', async () => {
@@ -123,6 +146,10 @@ test('platform lifecycle and window services preserve adapter behavior', async (
     runtime: {
       chromiumSwitches: () => [['fixture-switch', 'fixture-value']],
     },
+    shortcuts: {
+      configure: bindings => { calls.push(['shortcuts', bindings]); return { ok: true }; },
+      cleanup: () => { calls.push('shortcut-cleanup'); return { ok: true }; },
+    },
     window: {
       mainOptions: () => ({ titleBarStyle: 'hiddenInset' }),
       configureMainWindow: win => { calls.push(['main', win]); return { ok: true }; },
@@ -135,6 +162,8 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   const lyricsWindow = { id: 'lyrics' };
   assert.deepEqual(platform.window.mainOptions(), { titleBarStyle: 'hiddenInset' });
   assert.deepEqual(platform.runtime.chromiumSwitches(), [['fixture-switch', 'fixture-value']]);
+  assert.deepEqual(platform.shortcuts.configure([{ action: 'togglePlay' }]), { ok: true });
+  assert.deepEqual(platform.shortcuts.cleanup(), { ok: true });
   assert.deepEqual(platform.window.desktopLyricsOptions(), { type: 'panel' });
   assert.deepEqual(platform.window.configureMainWindow(mainWindow), { ok: true });
   assert.deepEqual(platform.window.configureDesktopLyricsWindow(lyricsWindow), { ok: true });
@@ -142,6 +171,8 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   assert.deepEqual(platform.lifecycle.onActivate(), { ok: true });
   assert.deepEqual(await platform.lifecycle.cleanup(), { ok: true });
   assert.deepEqual(calls, [
+    ['shortcuts', [{ action: 'togglePlay' }]],
+    'shortcut-cleanup',
     ['main', mainWindow],
     ['lyrics', lyricsWindow],
     'ready',
