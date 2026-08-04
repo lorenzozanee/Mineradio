@@ -1,0 +1,147 @@
+name: Publish verified native release
+
+on:
+  workflow_dispatch:
+    inputs:
+      validation_run_id:
+        description: 'Completed native-package-validation run ID'
+        required: true
+        type: string
+      candidate_sha:
+        description: 'Exact commit SHA tested by that run'
+        required: true
+        type: string
+      release_tag:
+        description: 'New immutable project tag, for example mineradio-v2.1.0-macos-rc1'
+        required: true
+        type: string
+      release_name:
+        description: 'Draft release title'
+        required: true
+        type: string
+      qa_attestation:
+        description: 'Type APPROVED only after independent Windows and macOS QA sign-off'
+        required: true
+        type: string
+      security_attestation:
+        description: 'Type APPROVED only after independent release-security sign-off'
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: release-publisher-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify existing artifacts and create draft release
+    runs-on: ubuntu-24.04
+    environment: release-publisher
+    steps:
+      - name: Check out exact candidate SHA
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+      - name: Verify approval attestations
+        shell: bash
+        env:
+          QA_ATTESTATION: ${{ inputs.qa_attestation }}
+          SECURITY_ATTESTATION: ${{ inputs.security_attestation }}
+        run: |
+          set -euo pipefail
+          test "$QA_ATTESTATION" = APPROVED
+          test "$SECURITY_ATTESTATION" = APPROVED
+      - name: Verify validation run identity
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATION_RUN_ID: ${{ inputs.validation_run_id }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${VALIDATION_RUN_ID}")"
+          run_sha="$(jq -r .head_sha <<<"$run_json")"
+          run_status="$(jq -r .status <<<"$run_json")"
+          run_conclusion="$(jq -r .conclusion <<<"$run_json")"
+          test "$run_sha" = "$CANDIDATE_SHA"
+          test "$run_status" = completed
+          test "$run_conclusion" = success
+      - name: Download manifest from the validation run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Mineradio-native-manifest-${{ inputs.candidate_sha }}
+          path: release-input
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.validation_run_id }}
+      - name: Download Windows artifact from the validation run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Mineradio-Windows-x64-${{ inputs.candidate_sha }}
+          path: release-input/artifacts
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.validation_run_id }}
+      - name: Download macOS artifact from the validation run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Mineradio-macOS-arm64-${{ inputs.candidate_sha }}
+          path: release-input/artifacts
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.validation_run_id }}
+      - name: Verify manifest, checksums, contents, and tag uniqueness
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          test "$CANDIDATE_SHA" = "$(git rev-parse HEAD)"
+          [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$RELEASE_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$ ]]
+          test -f release-input/manifest.json
+          test -f release-input/SHA256SUMS
+          test "$(node -p "require('./release-input/manifest.json').candidateSha")" = "$CANDIDATE_SHA"
+          test "$(node -p "require('./release-input/manifest.json').validationRunId")" = "${{ inputs.validation_run_id }}"
+          windows_name="$(node -p "require('./release-input/manifest.json').artifacts[0]")"
+          macos_name="$(node -p "require('./release-input/manifest.json').artifacts[1]")"
+          grep -Eq '^Mineradio-[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?-Setup\\.exe$' <<<"$windows_name"
+          grep -Eq '^Mineradio-[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?-macOS-arm64\\.dmg$' <<<"$macos_name"
+          test -f "release-input/artifacts/$windows_name"
+          test -f "release-input/artifacts/$macos_name"
+          (cd release-input/artifacts && sha256sum -c ../SHA256SUMS)
+          test "$(find release-input/artifacts -type f -name '*.exe' | wc -l | tr -d ' ')" -eq 1
+          test "$(find release-input/artifacts -type f -name '*.dmg' | wc -l | tr -d ' ')" -eq 1
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Tag already exists: ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          if grep -R -n -E '(^|/)(\\.cookie|\\.qq-cookie|\\.kugou-cookie|\\.qishui-|\\.spotify-|\\.env)|node_modules|/Users/|/home/' release-input; then
+            echo 'Release input contains private files or absolute local paths.' >&2
+            exit 1
+          fi
+      - name: Create immutable annotated tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          git tag -a "$RELEASE_TAG" "$CANDIDATE_SHA" -m "Mineradio verified native release $RELEASE_TAG"
+          git push origin "$RELEASE_TAG"
+      - name: Create draft release from original artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_NAME: ${{ inputs.release_name }}
+        run: |
+          set -euo pipefail
+          printf '%s\n\nCandidate artifacts were downloaded from native-package-validation; no rebuild was performed.\n' "$RELEASE_NAME" > release-input/notes.md
+          gh release create "$RELEASE_TAG" release-input/artifacts/* release-input/manifest.json release-input/SHA256SUMS --draft --title "$RELEASE_NAME" --notes-file release-input/notes.md

@@ -40,6 +40,12 @@ cross-platform check-orchestration fixes in the working tree:
   source guards still run. The fixture expected paths use `realpathSync`, so
   macOS `/var` → `/private/var` canonicalization is tested correctly without
   changing Windows behavior.
+- The protected release path now has a manifest-producing native validation
+  job and a manual `release-publisher.yml` that verifies the completed run SHA,
+  success conclusion, artifact names/checksums, QA/security attestations, and
+  tag uniqueness before creating an annotated Tag and Draft Release. The
+  publisher never invokes a build; protected GitHub credentials and actual QA
+  approvals are still required before it can run.
 - Visible Apple Silicon QA covered first launch, native traffic lights, native
   menu, WebGL main scene, macOS fullscreen Space entry/exit, and `Cmd+Q` using
   an owned disposable profile. No provider login or real user data was used.

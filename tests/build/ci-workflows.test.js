@@ -46,8 +46,32 @@ test('native packages only build through manual dispatch and protected signing e
   assert.doesNotMatch(workflow, /pull_request_target/);
 });
 
+test('native validation emits a manifest and publisher only reuses approved artifacts', function() {
+  const validation = normalizeLineEndings(readWorkflow('native-package-validation.yml'));
+  const publisher = normalizeLineEndings(readWorkflow('release-publisher.yml'));
+  assert.match(validation, /needs: \[windows-x64, macos-arm64\]/);
+  assert.match(validation, /Check out candidate source for version metadata/);
+  assert.match(validation, /Mineradio-native-manifest-\$\{\{ github\.sha \}\}/);
+  assert.match(validation, /SHA256SUMS/);
+  assert.match(publisher, /^\s*workflow_dispatch:\s*$/m);
+  assert.match(publisher, /environment: release-publisher/);
+  assert.match(publisher, /validation_run_id/);
+  assert.match(publisher, /qa_attestation/);
+  assert.match(publisher, /security_attestation/);
+  assert.match(publisher, /actions\/download-artifact@[a-f0-9]{40}/);
+  assert.match(publisher, /run-id: \$\{\{ inputs\.validation_run_id \}\}/);
+  assert.match(publisher, /run_status.*completed/);
+  assert.match(publisher, /run_conclusion.*success/);
+  assert.match(publisher, /test -f "release-input\/artifacts\/\$windows_name"/);
+  assert.match(publisher, /sha256sum -c \.\.\/SHA256SUMS/);
+  assert.match(publisher, /git tag -a/);
+  assert.match(publisher, /gh release create .*--draft/);
+  assert.doesNotMatch(publisher, /npm (?:ci|install|run build|run test)/);
+  assert.doesNotMatch(publisher, /electron-builder/);
+});
+
 test('every third-party action is pinned to a full commit SHA', function() {
-  for (const name of ['cross-platform-ci.yml', 'native-package-validation.yml']) {
+  for (const name of ['cross-platform-ci.yml', 'native-package-validation.yml', 'release-publisher.yml']) {
     const workflow = readWorkflow(name);
     const actions = Array.from(workflow.matchAll(/^\s*uses:\s*([^\s#]+)/gm), function(match) { return match[1]; });
     assert.ok(actions.length > 0);

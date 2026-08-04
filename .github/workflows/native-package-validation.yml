@@ -122,3 +122,39 @@ jobs:
           path: dist-macos/Mineradio-*-macOS-arm64.dmg
           if-no-files-found: error
           retention-days: 7
+
+  manifest:
+    name: Manifest verified native artifacts
+    needs: [windows-x64, macos-arm64]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out candidate source for version metadata
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Download Windows validation artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Mineradio-Windows-x64-${{ github.sha }}
+          path: release-manifest/artifacts
+      - name: Download macOS validation artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Mineradio-macOS-arm64-${{ github.sha }}
+          path: release-manifest/artifacts
+      - name: Write immutable candidate manifest and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t windows_artifacts < <(find release-manifest/artifacts -type f -name 'Mineradio-*-Setup.exe' -print)
+          mapfile -t macos_artifacts < <(find release-manifest/artifacts -type f -name 'Mineradio-*-macOS-arm64.dmg' -print)
+          test "${#windows_artifacts[@]}" -eq 1
+          test "${#macos_artifacts[@]}" -eq 1
+          sha256sum "${windows_artifacts[0]}" "${macos_artifacts[0]}" | sed 's#  release-manifest/artifacts/##' > release-manifest/SHA256SUMS
+          version="$(node -p "require('./package.json').version")"
+          node -e "const fs=require('fs'); const manifest={version:process.argv[1],candidateSha:process.argv[2],validationRunId:process.env.GITHUB_RUN_ID,artifacts:['Mineradio-' + process.argv[1] + '-Setup.exe','Mineradio-' + process.argv[1] + '-macOS-arm64.dmg'],checksumsFile:'SHA256SUMS'}; fs.writeFileSync('release-manifest/manifest.json', JSON.stringify(manifest,null,2)+'\\n');" "$version" "${GITHUB_SHA}"
+      - name: Upload candidate manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Mineradio-native-manifest-${{ github.sha }}
+          path: release-manifest/
+          if-no-files-found: error
+          retention-days: 7
