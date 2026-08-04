@@ -24,14 +24,22 @@ passes. Upstream `main` is one README-only commit ahead of the release and has n
 - Locked electron-builder: 26.15.3
 - Locked music-metadata: 11.14.0
 
-Current local evidence is for candidate `c11f83cf110698ff3966669dcc3d8c1e3dd8aa67`:
+Current local evidence is for candidate `macos` commit `09e279c` plus the
+cross-platform check-orchestration fixes in the working tree:
 
-- `npm test`: 99 passed, 0 failed (42 shared, 46 platform/contract, 11 build).
-- `npm run test:smoke:macos`: 13 smoke-helper tests passed and the real arm64
+- `npm test`: 169 passed, 0 failed (87 shared core, 13 shared legacy,
+  56 platform/contract, 13 build).
+- `npm run test:smoke:macos`: 16 smoke-helper tests passed and the real arm64
   Electron main-entry smoke passed with an owned disposable profile.
 - `npm run build:mac:unsigned`, `npm run validate:mac:unsigned`, and
-  `npm run test:smoke:macos:package` passed. The verified artifact is an
-  unsigned local arm64 DMG, not a release candidate.
+  `npm run test:smoke:macos:package` passed (6 packaged smoke tests). The
+  verified artifact is an unsigned local arm64 DMG, not a release candidate.
+- `node scripts/quick-check.js` passes on macOS. The Wallpaper Engine native
+  runtime fixture is explicitly skipped because it validates Windows process
+  launch and command-line semantics; the cross-platform library fixture and all
+  source guards still run. The fixture expected paths use `realpathSync`, so
+  macOS `/var` → `/private/var` canonicalization is tested correctly without
+  changing Windows behavior.
 - Visible Apple Silicon QA covered first launch, native traffic lights, native
   menu, WebGL main scene, macOS fullscreen Space entry/exit, and `Cmd+Q` using
   an owned disposable profile. No provider login or real user data was used.
@@ -55,7 +63,7 @@ Current local evidence is for candidate `c11f83cf110698ff3966669dcc3d8c1e3dd8aa6
 | App/system memory trimming | Platform-specific operation | Existing PowerShell implementation | Explicit unsupported result and renderer gating tested |
 | Full desktop mode | Platform-specific operation | Existing HWND/WorkerW/Progman/DWM implementation | Explicit unsupported result and renderer gating tested |
 | Wallpaper Engine | Platform-specific operation | Existing Steam/registry/DWM/window runtime | Explicit unsupported result and renderer gating tested |
-| Tray close behavior | Platform-specific operation | Existing tray behavior | Explicit unsupported result and renderer exit fallback tested |
+| Tray/status-item close behavior | Platform-specific operation | Existing tray behavior preserved behind the adapter | Native macOS status item (`Show/Hide/Quit`) and tray-to-exit normalization tested |
 | Installer/build | Shared metadata plus platform builder config | Existing x64 NSIS configuration retained | arm64 DMG, `.icns`, hardened entitlements, isolated package smoke and DMG validator implemented |
 | Signing/release | Shared integrity gates | Native artifact/QA still required | Developer ID, notarization, stapling, Gatekeeper and independent QA still require protected credentials and release hardware |
 

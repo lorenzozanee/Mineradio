@@ -586,14 +586,18 @@ function checkWallpaperEngineImportGuard() {
     process.stderr.write(fixtureResult.stderr || '');
     fail('Wallpaper Engine fixture/path/range checks failed');
   }
-  const runtimeFixtureResult = spawnSync(process.execPath, [path.join(appRoot, 'scripts', 'check-wallpaper-engine-runtime.js')], {
-    cwd: appRoot,
-    encoding: 'utf8'
-  });
-  if (runtimeFixtureResult.status !== 0) {
-    process.stdout.write(runtimeFixtureResult.stdout || '');
-    process.stderr.write(runtimeFixtureResult.stderr || '');
-    fail('Wallpaper Engine signed runtime/session/capture checks failed');
+  if (process.platform === 'win32') {
+    const runtimeFixtureResult = spawnSync(process.execPath, [path.join(appRoot, 'scripts', 'check-wallpaper-engine-runtime.js')], {
+      cwd: appRoot,
+      encoding: 'utf8'
+    });
+    if (runtimeFixtureResult.status !== 0) {
+      process.stdout.write(runtimeFixtureResult.stdout || '');
+      process.stderr.write(runtimeFixtureResult.stderr || '');
+      fail('Wallpaper Engine signed runtime/session/capture checks failed');
+    }
+  } else {
+    console.log('[SKIP] Wallpaper Engine native runtime fixture is Windows-only; source guards remain active.');
   }
   console.log('[OK] Independent layer, native Scene runtime, opaque IPC IDs, path containment, safe previews, Range streaming, and original-background restore are guarded.');
 }
@@ -606,6 +610,7 @@ function checkDesktopWallpaperModeGuard() {
   const wallpaperEngineRuntimePath = path.join(appRoot, 'desktop', 'wallpaper-engine-runtime.js');
   const mainText = fs.readFileSync(path.join(appRoot, 'desktop', 'main.js'), 'utf8');
   const preloadText = fs.readFileSync(path.join(appRoot, 'desktop', 'preload.js'), 'utf8');
+  const platformIpcText = fs.readFileSync(path.join(appRoot, 'desktop', 'platform', 'ipc.js'), 'utf8');
   const fullDesktopRuntimeText = fs.readFileSync(fullDesktopRuntimePath, 'utf8');
   const iconShapeRuntimeText = fs.readFileSync(iconShapeRuntimePath, 'utf8');
   const nativeIconLayerRuntimeText = fs.readFileSync(nativeIconLayerRuntimePath, 'utf8');
@@ -681,9 +686,9 @@ function checkDesktopWallpaperModeGuard() {
     || /DesktopWallpaperRuntime|desktopWallpaperRuntime|wallpaper\.html|wallpaper-preload\.js|WALLPAPER_BACKDROP/.test(createWallpaperWindowBlock)) {
     fail('entering full desktop mode must expose the complete Mineradio HUD without creating or requiring a legacy fallback wallpaper');
   }
-  if (!/mineradio-wallpaper-set-enabled/.test(mainText)
-    || !/mineradio-wallpaper-get-status/.test(mainText)
-    || !/isTrustedMainWindowIpc/.test(mainText)
+  if (!/mineradio-wallpaper-set-enabled/.test(mainText + platformIpcText)
+    || !/mineradio-wallpaper-get-status/.test(mainText + platformIpcText)
+    || !/isTrustedMainWindowIpc/.test(mainText + platformIpcText)
     || !/getWallpaperModeStatus/.test(preloadText)
     || !/onWallpaperModeState/.test(preloadText)) {
     fail('full desktop mode must use the trusted, status-reporting main-process lifecycle');
@@ -1346,6 +1351,8 @@ function checkLyricScrollPerformanceGuard() {
 function checkPersistentCacheStorageGuard() {
   logStep('Persistent cache storage guard');
   const mainText = fs.readFileSync(path.join(appRoot, 'desktop', 'main.js'), 'utf8');
+  const windowsPlatformText = fs.readFileSync(path.join(appRoot, 'desktop', 'platform', 'windows', 'index.js'), 'utf8');
+  const macosPlatformText = fs.readFileSync(path.join(appRoot, 'desktop', 'platform', 'macos', 'index.js'), 'utf8');
   const preloadText = fs.readFileSync(path.join(appRoot, 'desktop', 'preload.js'), 'utf8');
   const lyricText = fs.readFileSync(path.join(appRoot, 'public', 'js', 'modules', '06-lyrics', '00-lyrics-fetch-parse.js'), 'utf8');
   const loaderText = fs.readFileSync(path.join(appRoot, 'public', 'js', 'index-loader.js'), 'utf8');
@@ -1354,7 +1361,7 @@ function checkPersistentCacheStorageGuard() {
   const cssText = fs.readFileSync(path.join(appRoot, 'public', 'css', 'index.css'), 'utf8');
   const setNameAt = mainText.indexOf('app.setName(APP_NAME)');
   const firstUserDataLookupAt = mainText.indexOf("app.getPath('appData')");
-  if (!/const CACHE_SETTINGS_FILE/.test(mainText) || !/const LYRIC_CACHE_MAX_BYTES = 96 \* 1024 \* 1024/.test(mainText) || !/function defaultCacheRootPath\(\)/.test(mainText) || !/path\.join\(dDrive, 'MineradioCache'\)/.test(mainText) || setNameAt < 0 || firstUserDataLookupAt < 0 || setNameAt > firstUserDataLookupAt || !/const STABLE_USER_DATA_PATH = STARTUP_QA_USER_DATA_PATH \|\| path\.join\(app\.getPath\('appData'\), APP_NAME\)/.test(mainText) || !/app\.setPath\('userData', STABLE_USER_DATA_PATH\)/.test(mainText) || !/app\.setPath\('sessionData', chromiumSessionDataPath\(cacheSettings\)\)/.test(mainText) || !/const currentChromiumPath = app\.getPath\('sessionData'\)/.test(mainText) || !/MINERADIO_BEAT_CACHE_DIR = cacheSettings\.beatmapsPath/.test(mainText) || !/nativePath:\s*path\.join\(rootPath, 'native-helper-temp'\)/.test(mainText) || !/const NATIVE_HELPER_TEMP_PATH = INITIAL_CACHE_SETTINGS\.nativePath/.test(mainText) || !/activeWallpaperEnginePath/.test(mainText) || !/wallpaperEngineBytes/.test(mainText)) {
+  if (!/const CACHE_SETTINGS_FILE/.test(mainText) || !/const LYRIC_CACHE_MAX_BYTES = 96 \* 1024 \* 1024/.test(mainText) || !/function defaultCacheRootPath\(\)/.test(mainText) || !/defaultCacheRoot:[\s\S]{0,500}path\.join\(dDrive, 'MineradioCache'\)/.test(windowsPlatformText) || !/defaultCacheRoot:[\s\S]{0,220}path\.join\(userDataPath, 'cache'\)/.test(macosPlatformText) || setNameAt < 0 || firstUserDataLookupAt < 0 || setNameAt > firstUserDataLookupAt || !/const STABLE_USER_DATA_PATH = STARTUP_QA_USER_DATA_PATH \|\| path\.join\(app\.getPath\('appData'\), APP_NAME\)/.test(mainText) || !/app\.setPath\('userData', STABLE_USER_DATA_PATH\)/.test(mainText) || !/app\.setPath\('sessionData', chromiumSessionDataPath\(cacheSettings\)\)/.test(mainText) || !/const currentChromiumPath = app\.getPath\('sessionData'\)/.test(mainText) || !/MINERADIO_BEAT_CACHE_DIR = cacheSettings\.beatmapsPath/.test(mainText) || !/nativePath:\s*path\.join\(rootPath, 'native-helper-temp'\)/.test(mainText) || !/const NATIVE_HELPER_TEMP_PATH = INITIAL_CACHE_SETTINGS\.nativePath/.test(mainText) || !/activeWallpaperEnginePath/.test(mainText) || !/wallpaperEngineBytes/.test(mainText)) {
     fail('desktop cache settings must keep app-owned userData stable and route Chromium sessionData plus beatmaps to the configurable cache root');
   }
   if (!/function migrateMisplacedAppOwnedFiles\(\)/.test(mainText) || !/APP_OWNED_MIGRATION_FILES/.test(mainText) || !/process\.env\.QISHUI_COOKIE_FILE = path\.join\(STABLE_USER_DATA_PATH, '\.qishui-cookie'\)/.test(mainText) || !/process\.env\.SPOTIFY_TOKEN_FILE = path\.join\(STABLE_USER_DATA_PATH, '\.spotify-token\.json'\)/.test(mainText)) {
@@ -1381,14 +1388,15 @@ function checkExternalUpdatePageBridgeGuard() {
   const mainText = fs.readFileSync(path.join(appRoot, 'desktop', 'main.js'), 'utf8');
   const preloadText = fs.readFileSync(path.join(appRoot, 'desktop', 'preload.js'), 'utf8');
   const serverText = fs.readFileSync(path.join(appRoot, 'server.js'), 'utf8');
+  const externalNavigationText = fs.readFileSync(path.join(appRoot, 'desktop', 'shared', 'external-navigation-validation.js'), 'utf8');
   const updateUiText = fs.readFileSync(path.join(appRoot, 'public', 'js', 'modules', '08-account', '00-update-preview.js'), 'utf8');
   const bridgeText = mainText + '\n' + preloadText;
   if (
-    !/ipcMain\.handle\('mineradio-open-update-page', async \(event, value\) =>/.test(mainText)
+    !/(?:ipcMain|trustedIpcMain)\.handle\('mineradio-open-update-page', async \(event, value\) =>/.test(mainText)
     || !/isTrustedMainWindowIpc\(event\)/.test(mainText)
-    || !/target\.length > 2048/.test(mainText)
-    || !/parsed\.protocol !== 'https:'/.test(mainText)
-    || !/await shell\.openExternal\(parsed\.href\)/.test(mainText)
+    || !/maxLength = options\.maxLength == null \? 2048/.test(externalNavigationText)
+    || !/parsed\.protocol\s*!==\s*'https:'/.test(mainText + externalNavigationText)
+    || !/await shell\.openExternal\(target\.url\)/.test(mainText)
     || !/openUpdatePage: \(url\) => ipcRenderer\.invoke\('mineradio-open-update-page'/.test(preloadText)
   ) {
     fail('desktop update bridge must open only bounded HTTPS pages from the trusted main document');
