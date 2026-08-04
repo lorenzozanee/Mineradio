@@ -14,7 +14,7 @@ test('macOS platform reports unsupported native desktop capabilities', async () 
     capabilities: {
       fullDesktopMode: false,
       wallpaperEngine: false,
-      tray: false,
+      tray: true,
     },
   });
   assert.equal(platform.lifecycle.quitWhenAllWindowsClosed, false);
@@ -22,6 +22,7 @@ test('macOS platform reports unsupported native desktop capabilities', async () 
   assert.deepEqual(platform.runtime.chromiumSwitches(), []);
   assert.equal(platform.runtime.defaultCacheRoot('/fixture/profile'), path.join('/fixture/profile', 'cache'));
   assert.equal(Object.hasOwn(platform.window.mainOptions(), 'icon'), false);
+  assert.equal(platform.tray.isAvailable(), true);
   for (const result of [
     await platform.desktopMode.enable({}),
     await platform.desktopMode.disable('test'),

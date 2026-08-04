@@ -66,6 +66,14 @@ function systemMemoryService() {
   };
 }
 
+function trayService() {
+  return {
+    createOrUpdate: () => ({ ok: true }),
+    destroy: () => ({ ok: true }),
+    isAvailable: () => true,
+  };
+}
+
 test('platform contract exposes a bounded serializable capability snapshot', () => {
   const platform = createPlatformContract({
     id: 'fixture',
@@ -77,6 +85,7 @@ test('platform contract exposes a bounded serializable capability snapshot', () 
     systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
+    tray: trayService(),
   });
   assert.deepEqual(Object.keys(platform.capabilities), Array.from(PLATFORM_CAPABILITY_KEYS));
   assert.deepEqual(JSON.parse(JSON.stringify(platform.snapshot())), {
@@ -99,6 +108,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
+    tray: trayService(),
   }), /Unknown platform capabilities/);
   assert.throws(() => createPlatformContract({
     id: 'fixture',
@@ -121,6 +131,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
+    tray: trayService(),
   }), /lifecycle\.onReady/);
   assert.throws(() => createPlatformContract({
     id: 'fixture',
@@ -143,6 +154,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
+    tray: trayService(),
   }), /runtime\.chromiumSwitches/);
   assert.throws(() => createPlatformContract({
     id: 'fixture',
@@ -154,6 +166,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
+    tray: trayService(),
   }), /shortcuts\.configure/);
   assert.throws(() => createPlatformContract({
     id: 'fixture',
@@ -165,7 +178,19 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     systemMemory: {},
     window: windowService(),
     desktopMode: desktopModeService(),
+    tray: trayService(),
   }), /systemMemory\.setNativeTempPath/);
+  assert.throws(() => createPlatformContract({
+    id: 'fixture',
+    nodePlatform: 'darwin',
+    capabilities: {},
+    lifecycle: lifecycleService(),
+    runtime: runtimeService(),
+    shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
+    window: windowService(),
+    desktopMode: desktopModeService(),
+  }), /tray\.createOrUpdate/);
 });
 
 test('platform lifecycle and window services preserve adapter behavior', async () => {
@@ -198,6 +223,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
       configureDesktopLyricsWindow: win => { calls.push(['lyrics', win]); return { ok: true }; },
     },
     desktopMode: desktopModeService(),
+    tray: trayService(),
   });
   const mainWindow = { id: 'main' };
   const lyricsWindow = { id: 'lyrics' };

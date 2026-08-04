@@ -76,6 +76,7 @@ function createPlatformContract(options = {}) {
     'configureDesktopLyricsWindow',
   ]);
   assertDesktopModeService(options.desktopMode);
+  assertService('tray', options.tray, ['createOrUpdate', 'destroy', 'isAvailable']);
 
   const capabilities = createCapabilities(options.capabilities);
   const lifecycle = Object.freeze({
@@ -118,6 +119,11 @@ function createPlatformContract(options = {}) {
     disable: options.desktopMode.disable,
     getStatus: options.desktopMode.getStatus,
   });
+  const tray = Object.freeze({
+    createOrUpdate: options.tray.createOrUpdate,
+    destroy: options.tray.destroy,
+    isAvailable: options.tray.isAvailable,
+  });
 
   return Object.freeze({
     id,
@@ -129,6 +135,7 @@ function createPlatformContract(options = {}) {
     systemMemory,
     window,
     desktopMode,
+    tray,
     supports(capability) {
       if (!isCapabilityName(capability)) return false;
       return capabilities[capability] === true;

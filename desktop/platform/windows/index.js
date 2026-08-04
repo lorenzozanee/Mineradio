@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { createPlatformContract } = require('../contract');
 const systemMemory = require('./system-memory');
+const windowsTray = require('./tray');
 
 function successfulNoop() {
   return { ok: true };
@@ -71,5 +72,6 @@ module.exports = function createWindowsPlatform(options = {}) {
       configureDesktopLyricsWindow,
     },
     desktopMode: options.desktopMode,
+    tray: windowsTray,
   });
 };

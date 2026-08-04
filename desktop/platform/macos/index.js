@@ -5,6 +5,7 @@ const { createPlatformContract, unsupportedResult } = require('../contract');
 const { installApplicationMenu } = require('./application-menu');
 const { createMacosGlobalShortcutService } = require('./shortcuts');
 const systemMemory = require('./system-memory');
+const statusItem = require('./status-item');
 
 function configureMainWindow(win) {
   if (!win || typeof win.setWindowButtonVisibility !== 'function') return { ok: true };
@@ -41,7 +42,7 @@ module.exports = function createMacosPlatform(options = {}) {
     capabilities: {
       fullDesktopMode: false,
       wallpaperEngine: false,
-      tray: false,
+      tray: true,
     },
     lifecycle: {
       quitWhenAllWindowsClosed: false,
@@ -87,5 +88,6 @@ module.exports = function createMacosPlatform(options = {}) {
       disable: () => desktopModeUnsupported('disable'),
       getStatus: () => desktopModeUnsupported('getStatus'),
     },
+    tray: statusItem,
   });
 };

@@ -828,10 +828,10 @@ function broadcastDesktopWallpaperStatus(status) {
   if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.webContents || mainWindow.webContents.isDestroyed()) return;
   mainWindow.webContents.send('mineradio-wallpaper-runtime-state', {
     ...(status || fullDesktopModeRuntime.getStatus('broadcast')),
-    recoveryTrayAvailable: !!tray,
+    recoveryTrayAvailable: !!(platform.tray && platform.tray.isAvailable()),
     escapeShortcutRegistered: fullDesktopEscapeRegistered === true,
   });
-  if (tray) createOrUpdateTray();
+  createOrUpdateTray();
 }
 
 function wallpaperEngineProvidesDesktopBackdrop() {
@@ -2075,60 +2075,33 @@ function focusMainWindow() {
 }
 
 function createOrUpdateTray() {
-  if (!platform.supports('tray')) return;
-  if (!tray) {
-    try {
-      tray = new Tray(APP_ICON_ICO);
-      tray.setToolTip(APP_NAME);
-      tray.on('click', () => focusMainWindow());
-      tray.on('double-click', () => focusMainWindow());
-    } catch (e) {
-      console.warn('Tray init failed:', e.message);
-      tray = null;
-      return;
-    }
-  }
+  if (!platform.tray || !platform.tray.isAvailable()) return;
   const desktopMode = fullDesktopModeRuntime.getStatus('tray-menu');
-  const menu = Menu.buildFromTemplate([
-    { label: `显示 ${APP_NAME}`, click: () => focusMainWindow() },
-    {
-      label: '退出完整桌面模式',
-      visible: desktopMode.enabled === true,
-      click: () => disableFullDesktopMode('tray-exit-desktop-mode').catch((error) => {
-        console.warn('[FullDesktopMode] tray exit failed:', error && error.message || error);
-      }),
-    },
-    { type: 'separator' },
-    {
-      label: '退出',
-      click: () => {
-        appQuitting = true;
-        app.quit();
-      },
-    },
-  ]);
-  tray.setContextMenu(menu);
+  platform.tray.createOrUpdate({
+    appName: APP_NAME,
+    iconPath: APP_ICON_ICO,
+    onShow: () => focusMainWindow(),
+    onQuit: () => { appQuitting = true; app.quit(); },
+    fullDesktopEnabled: desktopMode.enabled === true,
+    onExitFullDesktop: () => disableFullDesktopMode('tray-exit-desktop-mode').catch((error) => {
+      console.warn('[FullDesktopMode] tray exit failed:', error && error.message || error);
+    }),
+  });
 }
 
 function ensureFullDesktopModeRecoveryTray() {
-  if (tray) {
-    createOrUpdateTray();
-    return true;
-  }
   createOrUpdateTray();
-  if (!tray) return false;
-  return true;
+  return platform.tray && platform.tray.isAvailable();
 }
 
 function releaseFullDesktopModeRecoveryTray() {
   if (fullDesktopModeRuntime.getStatus('release-recovery-tray').enabled === true) return false;
   if (closeBehavior === 'tray') {
-    if (tray) createOrUpdateTray();
+    createOrUpdateTray();
     return false;
   }
-  if (tray) {
-    try { tray.destroy(); } catch (_) {}
-    tray = null;
+  if (platform.tray && platform.tray.isAvailable()) {
+    platform.tray.destroy();
   }
   return true;
 }
@@ -3793,7 +3766,7 @@ function closeOverlayWindows(reason = 'overlay-close') {
 function desktopModePlatformStatus(reason = 'renderer-query') {
   const status = {
     ...fullDesktopModeRuntime.getStatus(reason),
-    recoveryTrayAvailable: !!tray,
+    recoveryTrayAvailable: !!(platform.tray && platform.tray.isAvailable()),
     escapeShortcutRegistered: fullDesktopEscapeRegistered === true,
   };
   return {
@@ -5691,9 +5664,8 @@ if (!gotSingleInstanceLock) {
     platform.shortcuts.cleanup();
     closeDesktopLyricsWindow();
     if (localServer && localServer.close) localServer.close();
-    if (tray) {
-      try { tray.destroy(); } catch (e) {}
-      tray = null;
+    if (platform.tray && platform.tray.isAvailable()) {
+      platform.tray.destroy();
     }
     const quitMainWindow = mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
     const forceDestroyQuitMainWindow = (reason, detail) => {
