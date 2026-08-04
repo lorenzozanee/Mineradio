@@ -94,13 +94,13 @@ async function run() {
     assert(main.indexOf('migrateLegacyAuthStorage();') < main.indexOf('await initializeLoginEasterEggGate();'));
     assert(main.indexOf('await initializeLoginEasterEggGate();') < main.indexOf("localServer = require(serverModulePath)"));
     ['netease', 'qq', 'kugou', 'spotify'].forEach((provider) => {
-      const marker = `ipcMain.handle('${provider}-music-open-login'`;
+      const marker = `trustedIpcMain.handle('${provider}-music-open-login'`;
       const start = main.indexOf(marker);
       assert(start >= 0, `${provider} login IPC missing`);
       assert(main.slice(start, start + 260).includes('loginEasterEggGate.isUnlocked()'), `${provider} login IPC is not gated`);
     });
-    assert(!main.includes("ipcMain.handle('qishui-music-open-login'"), 'Qishui must use the embedded signed QR route, not the legacy login-window IPC');
-    assert(main.includes("ipcMain.handle('mineradio-login-easter-egg-reset'"));
+    assert(!main.includes("trustedIpcMain.handle('qishui-music-open-login'"), 'Qishui must use the embedded signed QR route, not the legacy login-window IPC');
+    assert(main.includes("trustedIpcMain.handle('mineradio-login-easter-egg-reset'"));
     assert(main.includes("loginEasterEggGate.resetForReplay(() => clearAllProviderLoginState('renderer-replay-reset'))"));
     assert(main.includes('credentialRoots: () => ['));
     assert(main.includes("clearAllProviderLoginState('startup-gate')"));
@@ -215,7 +215,7 @@ async function run() {
     assert(splashRenderer.includes('[220.00, 261.63, 329.63, 392.00]'));
 
     const desktopMain = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.js'), 'utf8');
-    assert(desktopMain.includes("ipcMain.handle('mineradio-full-desktop-request-keyboard-focus'"));
+    assert(desktopMain.includes("trustedIpcMain.handle('mineradio-full-desktop-request-keyboard-focus'"));
     assert(desktopMain.includes("fullDesktopModeRuntime.getStatus('renderer-keyboard-focus-fallback')"));
     assert(desktopMain.includes('if (desktopStatus && desktopStatus.enabled) {'));
     assert(desktopMain.includes('ordinaryWindowImeFocusRepairs.get(webContents)'));

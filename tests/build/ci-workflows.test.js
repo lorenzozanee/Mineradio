@@ -38,3 +38,12 @@ test('native packages only build through manual dispatch and protected signing e
   assert.match(readPackage().scripts['build:mac'], /--mac dmg --arm64 --publish never/);
   assert.doesNotMatch(workflow, /pull_request_target/);
 });
+
+test('every third-party action is pinned to a full commit SHA', function() {
+  for (const name of ['cross-platform-ci.yml', 'native-package-validation.yml']) {
+    const workflow = readWorkflow(name);
+    const actions = Array.from(workflow.matchAll(/^\s*uses:\s*([^\s#]+)/gm), function(match) { return match[1]; });
+    assert.ok(actions.length > 0);
+    for (const action of actions) assert.match(action, /^[^@]+@[a-f0-9]{40}$/);
+  }
+});

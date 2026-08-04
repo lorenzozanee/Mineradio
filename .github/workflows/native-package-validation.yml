@@ -16,9 +16,9 @@ jobs:
     runs-on: windows-2025
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
           cache: npm
@@ -36,7 +36,7 @@ jobs:
             throw 'Mineradio.exe is not an x64 executable.'
           }
       - name: Upload Windows validation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Mineradio-Windows-x64-${{ github.sha }}
           path: dist/Mineradio-*-Setup.exe
@@ -49,9 +49,9 @@ jobs:
     environment: release-signing
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
           cache: npm
@@ -116,7 +116,7 @@ jobs:
           if [[ -n "${MINERADIO_CERTIFICATE_PATH:-}" ]]; then rm -f "$MINERADIO_CERTIFICATE_PATH"; fi
           if [[ -n "${MINERADIO_API_KEY_PATH:-}" ]]; then rm -f "$MINERADIO_API_KEY_PATH"; fi
       - name: Upload macOS validation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Mineradio-macOS-arm64-${{ github.sha }}
           path: dist-macos/Mineradio-*-macOS-arm64.dmg

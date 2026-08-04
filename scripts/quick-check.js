@@ -492,8 +492,8 @@ function checkWallpaperEngineImportGuard() {
     mainText.indexOf('function configureLocalAppPermissions')
   );
   const wallpaperCaptureResultBlock = mainText.slice(
-    mainText.indexOf("ipcMain.handle('mineradio-wallpaper-engine-capture-result'"),
-    mainText.indexOf("ipcMain.handle('mineradio-wallpaper-engine-stop-scene'")
+    mainText.indexOf("trustedIpcMain.handle('mineradio-wallpaper-engine-capture-result'"),
+    mainText.indexOf("trustedIpcMain.handle('mineradio-wallpaper-engine-stop-scene'")
   );
   const boundsTimerIndex = wallpaperBoundsScheduleBlock.indexOf('wallpaperEngineHostBoundsRestartTimer = setTimeout');
   const boundsPrepareIndex = wallpaperBoundsScheduleBlock.indexOf('prepareWallpaperEngineRendererHostBoundsFrame');
