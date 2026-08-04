@@ -22,7 +22,7 @@
 | Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/platform/windows/system-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
 | macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, normalized global shortcuts, and explicit unsupported desktop-mode results. arm64 DMG configuration, minimum entitlements, protected signing/notarization hooks, and validators live under `build/macos/`. |
 | Tests | Existing tests remain mostly flat and mix `node:test` with self-running assertion scripts. Platform contract tests now live under `tests/contracts/` and `tests/platform/`. `scripts/quick-check.js` still orchestrates selected tests plus extensive source guards. |
-| Automation | `test`, `test:shared`, `test:platform`, `test:build`, and `test:smoke:macos` exist. Dual-platform contract CI and manually dispatched native package validation workflows exist. No Release publisher exists. |
+| Automation | `test`, `test:shared`, `test:platform`, `test:build`, and `test:smoke:macos` exist. Dual-platform contract CI, manually dispatched native package validation, and a protected zero-rebuild release publisher workflow exist on the candidate branch. |
 | Package manager | npm with `package-lock.json` lockfile version 3. No Node version, lint, formatter, or TypeScript configuration is pinned. |
 | Git | `origin` is the project fork. `upstream` is configured as `https://github.com/XxHuberrr/Mineradio.git`; stable baseline `v2.1.0` resolves to commit `96091d123b36783f5604d1acd47b00b0708cabbd`. |
 
@@ -54,9 +54,9 @@ Run commands from the repository root.
 | Windows unpacked app | `npm run build:win:dir` | Builds the existing Windows directory target. |
 | Internal beta installer | `npm run build:win:internal-beta` | Uses `electron-builder.internal-beta.json`; never mix this artifact with a public release. |
 
-No Release publisher command exists. `npm test`, the macOS smoke commands, and the separate Windows/macOS build commands above are current; formal native success still requires the documented target-OS credentials and QA gates.
+There is no local Release publisher command: publishing is deliberately a protected GitHub Actions workflow that downloads and verifies an existing native-package-validation run. `npm test`, the macOS smoke commands, and the separate Windows/macOS build commands above are current; formal native success still requires the documented target-OS credentials and QA gates. The candidate workflow files are not dispatchable until repository policy exposes them from the default branch.
 
-At the 2026-08-04 inspection, `node scripts/quick-check.js` on macOS with Node 26.4.0 initially failed the first FLAC metadata case because dependencies were absent. After `npm ci`, all six FLAC cases passed; the checker then failed the Wallpaper Engine library path assertion because macOS resolves `/var` to `/private/var`. Record both baselines; do not modify Windows-native assertions to manufacture a macOS pass or claim the full checker is green.
+At the 2026-08-04 inspection, `node scripts/quick-check.js` on macOS with Node 26.4.0 initially failed before dependencies were installed and later exposed Windows-only Wallpaper Engine runtime fixtures plus `/var` → `/private/var` canonicalization. The shared fixture now compares real paths and the native runtime fixture runs only on Windows; the complete macOS quick-check passes. Do not modify Windows-native assertions to manufacture a macOS pass or claim a target-OS native pass from a cross-OS mock.
 
 ## Target structure: migration requirement
 
