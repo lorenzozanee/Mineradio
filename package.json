@@ -15,7 +15,7 @@
     "test:shared:legacy": "node scripts/run-legacy-tests.js",
     "test:shared:live": "MINERADIO_LIVE_PROVIDER_SMOKE=1 node tests/qishui-passport-live-smoke.js",
     "test:platform": "node --test tests/contracts/native-desktop-feature-boundary.test.js tests/contracts/platform-contract.test.js tests/contracts/platform-ipc-boundary.test.js tests/contracts/platform-renderer-capabilities.test.js tests/contracts/renderer-platform-ux.test.js tests/contracts/wallpaper-engine-renderer-capability.test.js tests/contracts/close-behavior-platform.test.js tests/platform/windows/platform.test.js tests/platform/macos/platform.test.js tests/platform/macos/application-menu.test.js tests/platform/macos/shortcuts.test.js tests/platform/macos/system-memory.test.js tests/platform/macos/status-item.test.js",
-    "test:smoke:macos": "node --test tests/smoke/macos/main-entry-smoke.test.js && node tests/smoke/macos/main-entry-smoke.js",
+    "test:smoke:macos": "node --test tests/smoke/macos/main-entry-smoke.test.js tests/smoke/macos/renderer-crash-recovery.test.js && node tests/smoke/macos/main-entry-smoke.js",
     "test:smoke:macos:package": "node --test tests/smoke/macos/packaged-app-smoke.test.js && node tests/smoke/macos/packaged-app-smoke.js",
     "test:build": "node --test tests/build/ci-workflows.test.js tests/build/macos-build.test.js",
     "build:mac": "electron-builder --config electron-builder.macos.js --mac dmg --arm64 --publish never",
@@ -121,6 +121,7 @@
     "music-metadata": "11.14.0"
   },
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "electron": "^42.4.1",
     "electron-builder": "^26.15.3",
     "rcedit": "^5.0.2"
