@@ -2,7 +2,7 @@
 
 ![Mineradio 暗场启动页](./docs/assets/readme/cinema-beat-smoke.png)
 
-Mineradio 是一款 Windows 桌面沉浸式音乐播放器，把搜索播放、歌词舞台、粒子视觉、3D 歌单架和完整桌面模式组合成一个更接近现场感的私人音乐空间。
+Mineradio 是一款沉浸式桌面音乐播放器，把搜索播放、歌词舞台、粒子视觉、3D 歌单架和完整桌面模式组合成一个更接近现场感的私人音乐空间。正式公开发行仍是 Windows x64；Apple Silicon macOS (`arm64`) 适配已具备本地构建、自动化验证和签名公证流程，但尚无已签名的公开 macOS 安装包。
 
 ## 立即下载 Windows 安装包
 
@@ -76,6 +76,18 @@ npm run build:win
 ```
 
 桌面版入口由 Electron 主进程加载本地服务。`npm run build:win` 会生成 Windows NSIS 安装包，产物位于 `dist/`。
+
+在 Apple Silicon macOS 上，可使用隔离数据目录完成开发验证：
+
+```bash
+npm test
+npm run test:smoke:macos
+npm run build:mac:unsigned
+npm run validate:mac:unsigned
+npm run test:smoke:macos:package
+```
+
+`npm run build:mac:unsigned` 仅用于本地验证，不能用于分发。正式 DMG 使用 `npm run build:mac`，要求 Developer ID 签名和 Apple 公证凭据；完整流程见 [macOS arm64 构建、签名与公证](./docs/MACOS_BUILD_SIGNING.md)。
 
 ## 更新机制
 
