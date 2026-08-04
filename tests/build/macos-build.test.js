@@ -1,0 +1,144 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const test = require('node:test');
+
+const { createMacConfiguration } = require('../../build/macos/configuration');
+const {
+  notarizeMacApp,
+  readNotarizationCredentials
+} = require('../../build/macos/notarize');
+const {
+  assertArm64Executable,
+  findAbsoluteUserPaths,
+  findPrivatePaths
+} = require('../../build/macos/validate-dmg');
+
+test('macOS production configuration is arm64-only and fails closed without signing', function() {
+  const config = createMacConfiguration({});
+
+  assert.deepEqual(config.mac.target, [{ target: 'dmg', arch: ['arm64'] }]);
+  assert.equal(config.mac.forceCodeSigning, true);
+  assert.equal(Object.hasOwn(config.mac, 'identity'), false);
+  assert.equal(config.mac.hardenedRuntime, true);
+  assert.equal(config.mac.notarize, false, 'custom afterSign hook owns notarization');
+  assert.equal(config.afterSign, 'build/macos/notarize.js');
+  assert.equal(config.win, undefined);
+  assert.equal(config.nsis, undefined);
+  assert.equal(config.publish, null);
+  assert.ok(config.files.includes('!build/**/*'));
+});
+
+test('unsigned macOS output requires the explicit local opt-out', function() {
+  const config = createMacConfiguration({ MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD: '1' });
+  assert.equal(config.mac.forceCodeSigning, false);
+  assert.equal(config.mac.identity, null);
+
+  const nearMiss = createMacConfiguration({ MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD: 'true' });
+  assert.equal(nearMiss.mac.forceCodeSigning, true);
+  assert.equal(Object.hasOwn(nearMiss.mac, 'identity'), false);
+
+  assert.throws(function() {
+    createMacConfiguration({ CI: 'true', MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD: '1' });
+  }, /limited to explicit local validation/);
+});
+
+test('release entitlements contain only the Electron JIT exception', function() {
+  const source = fs.readFileSync(path.join(__dirname, '../../build/macos/entitlements.plist'), 'utf8');
+  const entitlementKeys = Array.from(source.matchAll(/<key>([^<]+)<\/key>/g), function(match) { return match[1]; });
+  assert.deepEqual(entitlementKeys, ['com.apple.security.cs.allow-jit']);
+  assert.doesNotMatch(source, /get-task-allow|disable-library-validation|app-sandbox|allow-unsigned-executable-memory/);
+});
+
+test('notarization credentials are complete and reference an existing key', function() {
+  assert.throws(function() {
+    readNotarizationCredentials({ APPLE_API_KEY: '/tmp/key.p8' }, function() { return true; });
+  }, /APPLE_API_KEY_ID, APPLE_API_ISSUER/);
+
+  assert.throws(function() {
+    readNotarizationCredentials({
+      APPLE_API_KEY: '/tmp/missing.p8',
+      APPLE_API_KEY_ID: 'KEY1234567',
+      APPLE_API_ISSUER: 'issuer'
+    }, function() { return false; });
+  }, /does not point to a readable private key/);
+});
+
+test('afterSign notarizes the signed app and never sends unrelated environment values', async function() {
+  let invocation;
+  const context = {
+    electronPlatformName: 'darwin',
+    appOutDir: '/tmp/mineradio-output',
+    packager: { appInfo: { productFilename: 'Mineradio' } }
+  };
+  await notarizeMacApp(context, {
+    env: {
+      APPLE_API_KEY: '/tmp/AuthKey.p8',
+      APPLE_API_KEY_ID: 'KEY1234567',
+      APPLE_API_ISSUER: 'issuer',
+      UNRELATED_SECRET: 'must-not-be-forwarded'
+    },
+    fileExists: function() { return true; },
+    logger: { log: function() {}, warn: function() {} },
+    notarize: async function(options) { invocation = options; }
+  });
+
+  assert.deepEqual(invocation, {
+    appPath: '/tmp/mineradio-output/Mineradio.app',
+    appleApiKey: '/tmp/AuthKey.p8',
+    appleApiKeyId: 'KEY1234567',
+    appleApiIssuer: 'issuer'
+  });
+});
+
+test('afterSign skips only the exact explicit unsigned-local value', async function() {
+  let called = false;
+  const context = {
+    electronPlatformName: 'darwin',
+    appOutDir: '/tmp/output',
+    packager: { appInfo: { productFilename: 'Mineradio' } }
+  };
+  await notarizeMacApp(context, {
+    env: { MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD: '1' },
+    logger: { log: function() {}, warn: function() {} },
+    notarize: async function() { called = true; }
+  });
+  assert.equal(called, false);
+
+  await assert.rejects(notarizeMacApp(context, {
+    env: { CI: 'true', MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD: '1' },
+    logger: { log: function() {}, warn: function() {} },
+    notarize: async function() { called = true; }
+  }), /not permitted in CI/);
+
+  await assert.rejects(notarizeMacApp(context, {
+    env: { MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD: 'true' },
+    fileExists: function(filePath) { return filePath.endsWith('.app'); },
+    logger: { log: function() {}, warn: function() {} },
+    notarize: async function() { called = true; }
+  }), /credentials are incomplete/);
+});
+
+test('artifact helpers reject non-arm64 binaries and private runtime files', function() {
+  assert.doesNotThrow(function() {
+    assertArm64Executable('/tmp/Mineradio', function() { return 'arm64\n'; });
+  });
+  assert.throws(function() {
+    assertArm64Executable('/tmp/Mineradio', function() { return 'x86_64 arm64\n'; });
+  }, /arm64-only/);
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mineradio-artifact-test-'));
+  try {
+    fs.writeFileSync(path.join(root, '.cookie'), 'synthetic-test-value');
+    fs.writeFileSync(path.join(root, 'safe.json'), '{}');
+    assert.deepEqual(findPrivatePaths(root).map(function(filePath) { return path.basename(filePath); }), ['.cookie']);
+    assert.deepEqual(findAbsoluteUserPaths(root), []);
+    fs.writeFileSync(path.join(root, 'leaked-path.txt'), '/Users/example/Music/private.flac');
+    assert.deepEqual(findAbsoluteUserPaths(root).map(function(filePath) { return path.basename(filePath); }), ['leaked-path.txt']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

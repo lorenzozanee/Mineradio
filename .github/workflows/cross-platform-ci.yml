@@ -1,0 +1,38 @@
+name: Cross-platform CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - macos
+
+permissions:
+  contents: read
+
+jobs:
+  shared-and-platform-contracts:
+    name: Shared and platform contracts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-2025
+          - macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run shared behavior tests
+        run: npm run test:shared
+      - name: Run platform contract tests
+        run: npm run test:platform
+      - name: Run build configuration tests
+        run: node --test tests/build/*.test.js
