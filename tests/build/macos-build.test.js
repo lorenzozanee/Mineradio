@@ -128,8 +128,8 @@ test('afterSign notarizes the signed app and never sends unrelated environment v
   });
 
   assert.deepEqual(invocation, {
-    appPath: '/tmp/mineradio-output/Mineradio.app',
-    appleApiKey: '/tmp/AuthKey.p8',
+    appPath: path.join(context.appOutDir, 'Mineradio.app'),
+    appleApiKey: path.resolve('/tmp/AuthKey.p8'),
     appleApiKeyId: 'KEY1234567',
     appleApiIssuer: 'issuer'
   });

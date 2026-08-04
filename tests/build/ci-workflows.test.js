@@ -9,16 +9,20 @@ function readWorkflow(name) {
   return fs.readFileSync(path.join(__dirname, '../../.github/workflows', name), 'utf8');
 }
 
+function normalizeLineEndings(value) {
+  return String(value || '').replace(/\r+\n/g, '\n');
+}
+
 function readPackage() {
   return JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), 'utf8'));
 }
 
 test('untrusted pull requests run secret-free contracts on both target operating systems', function() {
-  const workflow = readWorkflow('cross-platform-ci.yml');
+  const workflow = normalizeLineEndings(readWorkflow('cross-platform-ci.yml'));
   assert.match(workflow, /^\s*pull_request:\s*$/m);
-  const protectedBranchFilter = /branches:\r?\n\s+- main\r?\n\s+- macos\r?\n\s+- codex\/macos/;
+  const protectedBranchFilter = /branches:\n\s+- main\n\s+- macos\n\s+- codex\/macos/;
   assert.match(workflow, protectedBranchFilter);
-  assert.match(workflow.replace(/\n/g, '\r\n'), protectedBranchFilter);
+  assert.match(normalizeLineEndings('branches:\r\r\n  - main\r\r\n  - macos\r\r\n  - codex/macos'), protectedBranchFilter);
   assert.match(workflow, /windows-2025/);
   assert.match(workflow, /macos-15/);
   assert.match(workflow, /npm run test:shared/);
