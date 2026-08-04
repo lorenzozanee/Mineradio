@@ -1539,7 +1539,9 @@ function defaultDesktopCapturer() {
 class WallpaperEngineRuntime {
   constructor(options = {}) {
     this.library = options.library || null;
-    this.desktopCapturer = options.desktopCapturer || defaultDesktopCapturer();
+    this.desktopCapturer = Object.prototype.hasOwnProperty.call(options, 'desktopCapturer')
+      ? options.desktopCapturer
+      : defaultDesktopCapturer();
     this.discoverSteamLibraries = options.discoverSteamLibraries || defaultDiscoverSteamLibraries;
     this.execFile = options.execFile || childProcess.execFile;
     this.controlExecFile = options.controlExecFile || childProcess.execFile;

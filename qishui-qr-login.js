@@ -7,7 +7,6 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const qishuiAuthV6 = require('./qishui-auth-v6');
 
 const DEFAULT_CONFIG_FILE = path.join(__dirname, '.qishui-qr-login.json');
 
@@ -43,9 +42,13 @@ function hasLoginCookie(cookie) {
   return /(?:^|;\s*)(?:sessionid|sessionid_ss|sid_guard|sid_tt)=/i.test(String(cookie || ''));
 }
 
+function defaultAuth() {
+  return require('./qishui-auth-v6');
+}
+
 function createQishuiQrLoginBridge(options) {
   options = options && typeof options === 'object' ? options : {};
-  const auth = options.auth || qishuiAuthV6;
+  const auth = options.auth || defaultAuth();
   const configFile = options.configFile || process.env.QISHUI_QR_CONFIG_FILE || DEFAULT_CONFIG_FILE;
   let config = {
     ...readConfig(configFile),
@@ -118,9 +121,19 @@ function createQishuiQrLoginBridge(options) {
   };
 }
 
-const bridge = createQishuiQrLoginBridge();
+let defaultBridge = null;
 
-module.exports = Object.assign(bridge, {
+function getDefaultBridge() {
+  if (!defaultBridge) defaultBridge = createQishuiQrLoginBridge();
+  return defaultBridge;
+}
+
+module.exports = {
   createQishuiQrLoginBridge,
   hasLoginCookie,
-});
+  createQrCode: (...args) => getDefaultBridge().createQrCode(...args),
+  checkQrConnect: (...args) => getDefaultBridge().checkQrConnect(...args),
+  getCookie: (...args) => getDefaultBridge().getCookie(...args),
+  getStatus: (...args) => getDefaultBridge().getStatus(...args),
+  clear: (...args) => getDefaultBridge().clear(...args),
+};
