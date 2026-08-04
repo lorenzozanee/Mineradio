@@ -1,8 +1,8 @@
 # Mineradio Apple Silicon macOS 完整实施计划
 
-> **计划版本**：1.0
+> **计划版本**：1.1（执行状态更新）
 > **编制日期**：2026-08-04
-> **实施基线**：`main` = `89c0d230c3f1f792e5d9639781ebbf724c4efbfe`；当前迁移候选分支 `macos` = `726c41aba942f6844ba666ca098c9a4458099cb2`；可信上游稳定版 `v2.1.0` = `96091d123b36783f5604d1acd47b00b0708cabbd`
+> **实施基线**：`main` = `89c0d230c3f1f792e5d9639781ebbf724c4efbfe`；当前迁移候选分支 `macos` = `28a6b6b`；最新已验证双平台 CI 候选 = `f2729321331418533d673c08da6d99690c0111df`（run `30894218424`）；可信上游稳定版 `v2.1.0` = `96091d123b36783f5604d1acd47b00b0708cabbd`
 > **依据**：[Windows 向 macOS 迁移功能和界面丢失审计](Windows向macos迁移功能和界面丢失.md)、`AGENTS.md`、`package.json`、现有平台实现、构建脚本、CI 和测试。
 > **执行约束**：本计划交付给实施 Agent。每一个实现阶段均须独立提交并推送候选分支；在同一候选 SHA 的原生构建、签名、公证、安装 QA 和独立安全审查全部通过前，禁止合并 `main`、创建正式 Tag 或发布。
 
@@ -55,7 +55,7 @@
 | Windows | 现有 Windows 原生模块、NSIS、rcedit、快速检查和 Windows 测试保持权威 | 不改 Windows 实现或 Windows 专属测试，除非 Windows 自身发现独立 bug 并有 Windows 验证。 |
 | Renderer | 无 bundler；`public/index.html` 通过 `public/js/index-loader.js` 串接经典脚本 | 保持模块顺序；不得在顶层引入名称冲突或 Node API。 |
 | 构建 | `build:mac` 为签名 arm64 DMG，`build:mac:unsigned` 为本地验证；`build:win` 为 x64 NSIS | 不把 macOS 签名选项、图标、发布设置写进 Windows builder 配置。 |
-| CI | `cross-platform-ci.yml` 已在 `windows-2025` 和 `macos-15` 跑 shared/platform/build；原生包验证为受保护手动 workflow | 先扩展测试门槛，再配置正式候选/发布流程。 |
+| CI | `cross-platform-ci.yml` 已在 `windows-2025` 和 `macos-15` 跑 shared/platform/build；native manifest 与零重建 publisher 已在候选分支实现 | native/publisher workflow 仍须由维护者按默认分支保护策略暴露后，才能使用签名环境 dispatch。 |
 
 ### 2.2 架构目标与接口规则
 
