@@ -85,7 +85,14 @@ function assertPackagedContent(appPath) {
   const forbiddenBuildPaths = [
     path.join(appResources, 'build'),
     path.join(appResources, 'tests'),
-    path.join(appResources, '.github')
+    path.join(appResources, '.github'),
+    path.join(appResources, 'desktop', 'platform', 'windows'),
+    path.join(appResources, 'desktop', 'full-desktop-mode-runtime.js'),
+    path.join(appResources, 'desktop', 'desktop-icon-shape-runtime.js'),
+    path.join(appResources, 'desktop', 'desktop-native-icon-layer-runtime.js'),
+    path.join(appResources, 'desktop', 'wallpaper-engine-library.js'),
+    path.join(appResources, 'desktop', 'wallpaper-engine-runtime.js'),
+    path.join(appResources, 'desktop', 'wallpaper-mode-runtime.js')
   ];
   const packaged = forbiddenBuildPaths.filter(fs.existsSync);
   if (packaged.length) {

@@ -25,7 +25,12 @@ function createMacConfiguration(env = process.env) {
     },
     files: [
       ...sharedConfiguration.files,
-      '!build/**/*'
+      '!build/**/*',
+      '!desktop/platform/windows/**/*',
+      '!desktop/desktop-*-runtime.js',
+      '!desktop/full-desktop-mode-runtime.js',
+      '!desktop/wallpaper-engine-*.js',
+      '!desktop/wallpaper-mode-runtime.js'
     ],
     afterPack: 'build/macos/after-pack.js',
     afterSign: 'build/macos/notarize.js',

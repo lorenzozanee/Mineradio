@@ -40,6 +40,9 @@ test('macOS production configuration is arm64-only and fails closed without sign
   assert.equal(config.nsis, undefined);
   assert.equal(config.publish, null);
   assert.ok(config.files.includes('!build/**/*'));
+  assert.ok(config.files.includes('!desktop/platform/windows/**/*'));
+  assert.ok(config.files.includes('!desktop/full-desktop-mode-runtime.js'));
+  assert.ok(config.files.includes('!desktop/wallpaper-engine-*.js'));
 });
 
 test('afterPack adds camera and microphone usage descriptions to every macOS helper', function() {
