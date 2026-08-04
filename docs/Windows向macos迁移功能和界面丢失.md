@@ -3,6 +3,7 @@
 > **审计日期**: 2026-08-04
 > **审计方法**: 6-Agent 并行审计 (ultracode workflow) + 主 Agent 综合裁定
 > **审计范围**: `main` (89c0d23) → `codex/macos` (0a8ad53)
+> **审计状态**: ✅ 完成 — 全部 6 个 Agent 已完成并交叉验证
 
 ---
 
@@ -143,6 +144,30 @@
 | 安全卸载器（仅删除已知文件、安装标记验证） | `build/installer.nsh`, CHANGELOG v1.1.1 | 🔷 |
 | 桌面快捷方式 / 开始菜单 | package.json NSIS 配置 | 🔷 |
 | rcedit 资源注入（图标/版本信息） | `build/after-pack.js` | 🔷 |
+
+### 2.9 Feature Trace Agent 逐项核实摘要
+
+以下 15 个特性由 Feature Trace Agent 逐项用硬代码证据核实，结论经主 Agent 交叉验证：
+
+| 特性 | CHANGELOG 版本 | 迁移状态 | 关键代码证据 |
+|------|---------------|---------|-------------|
+| 全桌面模式 | v2.0.0, v1.0.0 | **未迁移** | `fullDesktopMode: false` (`desktop/platform/macos/index.js:42`)，14 个 unsupported 存根 (`native-desktop-features.js:58-78`) |
+| Wallpaper Engine | v2.1.0, v1.0.0 | **未迁移** | `wallpaperEngine: false` (`desktop/platform/macos/index.js:43`)，20 个 unsupported 存根 (`native-desktop-features.js:19-80`) |
+| 桌面歌词 | v1.0.10, v2.0.3 | **已完整迁移** | `type:'panel'` + `setAlwaysOnTop('floating')` (`desktop/platform/macos/index.js:65-73`) |
+| 登录系统 (5 Provider) | v2.0.2, v1.0.0 | **已完整迁移** | `BrowserWindow` + `session.fromPartition()` — 零 `process.platform` 检查 |
+| 本地音乐库 | v2.1.0 | **已完整迁移** | `pathIdentity` 抽象大小写差异；`music-metadata` npm 包跨平台 |
+| 更新/自动更新 | v1.1.0, v1.0.5 | **已完整迁移** | REST API (`server.js:4767`)；客户端下载已全局禁用 (`server.js:4779`) |
+| 安装器 | v1.1.1, v1.0.9 | **平台专属** | macOS: DMG + notarize；Windows: NSIS — 各自独立实现 |
+| 内存管理 | v1.0.4 | **部分迁移** | 快照可用；`SYSTEM_PURGE_AVAILABLE: false` — trim/purge unsupported |
+| 快捷键/媒体键 | v1.0.10 | **已完整迁移** | macOS `globalShortcut` + 方向键音量 — 零平台代码 |
+| 主页/天气电台 | v1.0.0 | **已完整迁移** | REST API + DOM 渲染器 — 零平台代码 |
+| 启动动画 | v0.9.13 | **已完整迁移** | WebGL Canvas — Web 标准，零平台代码 |
+| 视觉预设/控制台 | v1.0.3–v1.1.0 | **已完整迁移** | Three.js/WebGL — 零 `process.platform` 检查 |
+| 3D 歌单架 | v2.0.3–v1.0.0 | **已完整迁移** | 7 个 shelf 模块 (~2706 行) — 全部 Three.js/WebGL |
+| 播放引擎 | v1.0.0 | **已完整迁移** | Web Audio API (`AudioContext`/`AnalyserNode`) — Web 标准 |
+| 视觉细节 (色轮/粒子/发光) | v1.0.9–v1.0.3 | **已完整迁移** | WebGL 着色器/粒子系统 — 跨平台 |
+
+**统计**: 11 完全迁移 / 1 部分迁移 / 2 未迁移 (Windows 内核 API 依赖) / 1 平台专属
 
 ---
 
