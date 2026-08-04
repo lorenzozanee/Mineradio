@@ -20,7 +20,7 @@
 | Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/platform/windows/system-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
 | macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, normalized global shortcuts, and explicit unsupported desktop-mode results. No entitlements, icon set, DMG configuration, signing, or notarization workflow exists yet. |
 | Tests | Existing tests remain mostly flat and mix `node:test` with self-running assertion scripts. Platform contract tests now live under `tests/contracts/` and `tests/platform/`. `scripts/quick-check.js` still orchestrates selected tests plus extensive source guards. |
-| Automation | `test:shared` and `test:platform` exist. No `.github/workflows/`, standard aggregate `test` script, release script, or macOS build script exists. |
+| Automation | `test`, `test:shared`, `test:platform`, and `test:smoke:macos` exist. No `.github/workflows/`, release script, or macOS build script exists yet. |
 | Package manager | npm with `package-lock.json` lockfile version 3. No Node version, lint, formatter, or TypeScript configuration is pinned. |
 | Git | `origin` is the project fork. `upstream` is configured as `https://github.com/XxHuberrr/Mineradio.git`; stable baseline `v2.1.0` resolves to commit `96091d123b36783f5604d1acd47b00b0708cabbd`. |
 
@@ -37,6 +37,8 @@ Run commands from the repository root.
 | Fast/static check | `node scripts/quick-check.js` | Runs syntax, selected tests, and source guards; it skips Electron runtime smoke. |
 | Shared behavior tests | `npm run test:shared` | Runs platform-independent dependency-injection, bounded IPC payload, and external-navigation policy tests without starting Electron. |
 | Platform contract tests | `npm run test:platform` | Runs the shared contract plus Windows/macOS adapter, IPC boundary, and renderer capability tests. |
+| Aggregate shared/contract tests | `npm test` | Runs `test:shared` and `test:platform`; it does not substitute for target-OS Electron or installer smoke. |
+| macOS arm64 Electron smoke | `npm run test:smoke:macos` | On Apple Silicon with installed dependencies, runs smoke helper tests and the isolated real main entry; other hosts skip explicitly. |
 | Windows fast-check wrapper | `quick-check.bat` | Calls the same static check and pauses unless configured otherwise. |
 | Windows full smoke | `quick-check.bat full` or `node scripts/quick-check.js --electron` | Requires installed dev dependencies and Windows. The checker currently resolves only `node_modules/electron/dist/electron.exe`; real main-entry recovery is also Windows-only. |
 | One `node:test` file | `node --test tests/<node-test-file>.test.js` | Use only for files that import `node:test`. |

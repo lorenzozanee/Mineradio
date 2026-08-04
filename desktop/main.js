@@ -5281,6 +5281,8 @@ async function createWindowOnce() {
     runtimeName: APP_NAME,
     startedAt: Date.now(),
     phase: 'window-create-start',
+    userData: STABLE_USER_DATA_PATH,
+    sessionData: (() => { try { return app.getPath('sessionData'); } catch (_) { return ''; } })(),
     events: [],
   };
 
