@@ -101,6 +101,43 @@ test('PFX import passes its password only through the child environment', functi
   assert.equal(calls[0].options.env.MINERADIO_WINDOWS_PFX_PATH, 'C:\\fixture\\cert.pfx');
 });
 
+test('malformed certificate-import output removes the temporary store before failing', function() {
+  const calls = [];
+  assert.throws(function() {
+    importWindowsCertificate({
+      certificatePath: 'C:\\fixture\\cert.pfx',
+      password: 'fixture-secret',
+    }, function(command, args, options) {
+      calls.push({ command, args, options });
+      if (calls.length === 1) return 'malformed-thumbprint';
+      return '';
+    });
+  }, /40-character certificate thumbprint/);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].options.env.MINERADIO_WINDOWS_CERT_STORE, calls[0].options.env.MINERADIO_WINDOWS_CERT_STORE);
+});
+
+test('certificate-import parsing preserves both validation and cleanup failures', function() {
+  let calls = 0;
+  assert.throws(function() {
+    importWindowsCertificate({
+      certificatePath: 'C:\\fixture\\cert.pfx',
+      password: 'fixture-secret',
+    }, function() {
+      calls += 1;
+      if (calls === 1) return 'malformed-thumbprint';
+      throw new Error('fixture cleanup failed');
+    });
+  }, function(error) {
+    assert.ok(error instanceof AggregateError);
+    assert.match(error.message, /validation and cleanup both failed/);
+    assert.equal(error.errors.length, 2);
+    assert.match(error.errors[0].message, /40-character/);
+    assert.match(error.errors[1].message, /fixture cleanup failed/);
+    return true;
+  });
+});
+
 test('temporary certificate-store cleanup rejects broad or unexpected targets', function() {
   assert.throws(function() {
     removeWindowsCertificateStore('My', function() {});

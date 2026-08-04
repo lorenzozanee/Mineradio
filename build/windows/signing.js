@@ -83,7 +83,16 @@ function importWindowsCertificate(config, run = execFileSync) {
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
   }) || '').trim();
-  return { signingThumbprint: normalizeThumbprint(output), storeName };
+  try {
+    return { signingThumbprint: normalizeThumbprint(output), storeName };
+  } catch (error) {
+    try {
+      removeWindowsCertificateStore(storeName, run);
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], 'Windows certificate import validation and cleanup both failed.');
+    }
+    throw error;
+  }
 }
 
 function removeWindowsCertificateStore(storeName, run = execFileSync) {
