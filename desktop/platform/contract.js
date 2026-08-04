@@ -56,7 +56,7 @@ function createPlatformContract(options = {}) {
   if (!SUPPORTED_NODE_PLATFORMS.has(nodePlatform)) {
     throw new Error(`Unsupported platform contract: ${nodePlatform || 'unknown'}`);
   }
-  assertService('lifecycle', options.lifecycle, ['onReady', 'onActivate', 'cleanup']);
+  assertService('lifecycle', options.lifecycle, ['configureApp', 'onReady', 'onActivate', 'cleanup']);
   assertService('runtime', options.runtime, ['chromiumSwitches']);
   assertService('shortcuts', options.shortcuts, ['configure', 'cleanup']);
   assertService('systemMemory', options.systemMemory, [
@@ -80,6 +80,7 @@ function createPlatformContract(options = {}) {
   const capabilities = createCapabilities(options.capabilities);
   const lifecycle = Object.freeze({
     quitWhenAllWindowsClosed: options.lifecycle.quitWhenAllWindowsClosed === true,
+    configureApp: options.lifecycle.configureApp,
     onReady: options.lifecycle.onReady,
     onActivate: options.lifecycle.onActivate,
     cleanup: options.lifecycle.cleanup,

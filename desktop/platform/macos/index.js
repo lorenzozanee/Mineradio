@@ -44,6 +44,7 @@ module.exports = function createMacosPlatform(options = {}) {
     },
     lifecycle: {
       quitWhenAllWindowsClosed: false,
+      configureApp: () => ({ ok: true }),
       onReady: () => installApplicationMenu(options),
       onActivate: () => {
         if (options.app && options.app.dock && typeof options.app.dock.show === 'function') {

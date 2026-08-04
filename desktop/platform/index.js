@@ -4,7 +4,9 @@ function createPlatform(options = {}) {
   const nodePlatform = String(options.nodePlatform || process.platform);
   if (nodePlatform === 'win32') {
     return require('./windows')({
+      app: options.app,
       appIcon: options.appIcon,
+      appUserModelId: options.appUserModelId,
       desktopMode: options.desktopMode,
       shortcuts: options.shortcuts,
     });

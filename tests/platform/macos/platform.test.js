@@ -17,6 +17,7 @@ test('macOS platform reports unsupported native desktop capabilities', async () 
     },
   });
   assert.equal(platform.lifecycle.quitWhenAllWindowsClosed, false);
+  assert.deepEqual(platform.lifecycle.configureApp(), { ok: true });
   assert.deepEqual(platform.runtime.chromiumSwitches(), []);
   assert.equal(Object.hasOwn(platform.window.mainOptions(), 'icon'), false);
   for (const result of [

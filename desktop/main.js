@@ -133,6 +133,7 @@ const MAIN_EXTERNAL_NAVIGATION_POLICY = createExternalNavigationPolicy({
 const platform = createPlatform({
   app,
   appIcon: APP_ICON_ICO,
+  appUserModelId: APP_USER_MODEL_ID,
   globalShortcut,
   Menu,
   onShortcutAction: sendGlobalHotkeyAction,
@@ -150,6 +151,10 @@ const platform = createPlatform({
   },
 });
 const systemMemory = platform.systemMemory;
+const appPlatformSetup = platform.lifecycle.configureApp();
+if (!appPlatformSetup || appPlatformSetup.ok !== true) {
+  console.warn('[Platform] application setup incomplete:', appPlatformSetup && appPlatformSetup.error || 'APP_CONFIGURATION_FAILED');
+}
 memoryAutoState = {
   appTrimEnabled: true,
   backgroundTrimEnabled: true,
@@ -1933,7 +1938,7 @@ async function trimAppMemoryNow(reason) {
 }
 
 function scheduleAppMemoryTrim(reason, delay = 9000) {
-  if (platform.nodePlatform !== 'win32') return;
+  if (!systemMemory.SYSTEM_PURGE_AVAILABLE) return;
   if (memoryAutoState.appTrimEnabled === false || memoryAutoState.backgroundTrimEnabled === false) return;
   if (Date.now() - lastAppMemoryTrimAt < 120000) return;
   if (appMemoryTrimTimer) clearTimeout(appMemoryTrimTimer);
@@ -2050,7 +2055,7 @@ function focusMainWindow() {
 }
 
 function createOrUpdateTray() {
-  if (platform.nodePlatform !== 'win32') return;
+  if (!platform.supports('tray')) return;
   if (!tray) {
     try {
       tray = new Tray(APP_ICON_ICO);
@@ -2262,7 +2267,7 @@ function bindStartupFailureHandlers() {
 bindStartupFailureHandlers();
 
 function shouldEnsureDesktopShortcut() {
-  if (platform.nodePlatform !== 'win32') return false;
+  if (!platform.supports('tray')) return false;
   if (process.env.MINERADIO_NO_DESKTOP_SHORTCUT === '1') return false;
   return app.isPackaged || process.env.MINERADIO_CREATE_DESKTOP_SHORTCUT === '1';
 }
@@ -3693,7 +3698,7 @@ function nativeWindowHandleDecimal(win) {
 }
 
 function hookExplorerRestartForFullDesktop(win) {
-  if (platform.nodePlatform !== 'win32' || !win || win.isDestroyed() || typeof win.hookWindowMessage !== 'function') return;
+  if (!platform.supports('fullDesktopMode') || !win || win.isDestroyed() || typeof win.hookWindowMessage !== 'function') return;
   if (win.__mineradioTaskbarCreatedHookPending || win.__mineradioTaskbarCreatedMessageId) return;
   win.__mineradioTaskbarCreatedHookPending = true;
   const script = `
@@ -5578,8 +5583,6 @@ function createWindow() {
   });
   return mainWindowCreatePromise;
 }
-
-if (platform.nodePlatform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
 
 if (!gotSingleInstanceLock) {
   app.quit();

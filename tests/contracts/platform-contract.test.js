@@ -19,6 +19,7 @@ function desktopModeService() {
 function lifecycleService(quitWhenAllWindowsClosed = false) {
   return {
     quitWhenAllWindowsClosed,
+    configureApp: () => ({ ok: true }),
     onReady: async () => ({ ok: true }),
     onActivate: () => ({ ok: true }),
     cleanup: async () => ({ ok: true }),
@@ -113,7 +114,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     id: 'fixture',
     nodePlatform: 'darwin',
     capabilities: {},
-    lifecycle: {},
+    lifecycle: { configureApp: () => ({ ok: true }) },
     runtime: runtimeService(),
     shortcuts: shortcutService(),
     systemMemory: systemMemoryService(),
@@ -174,6 +175,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
     capabilities: {},
     lifecycle: {
       quitWhenAllWindowsClosed: false,
+      configureApp: () => { calls.push('configure-app'); return { ok: true }; },
       onReady: async () => { calls.push('ready'); return { ok: true }; },
       onActivate: () => { calls.push('activate'); return { ok: true }; },
       cleanup: async () => { calls.push('cleanup'); return { ok: true }; },
@@ -202,6 +204,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   assert.equal(platform.runtime.caseInsensitivePaths, false);
   assert.equal(platform.systemMemory.SYSTEM_PURGE_AVAILABLE, false);
   assert.deepEqual(platform.systemMemory.getMemorySnapshot(), { platform: 'darwin' });
+  assert.deepEqual(platform.lifecycle.configureApp(), { ok: true });
   assert.deepEqual(platform.shortcuts.configure([{ action: 'togglePlay' }]), { ok: true });
   assert.deepEqual(platform.shortcuts.cleanup(), { ok: true });
   assert.deepEqual(platform.window.desktopLyricsOptions(), { type: 'panel' });
@@ -211,6 +214,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   assert.deepEqual(platform.lifecycle.onActivate(), { ok: true });
   assert.deepEqual(await platform.lifecycle.cleanup(), { ok: true });
   assert.deepEqual(calls, [
+    'configure-app',
     ['shortcuts', [{ action: 'togglePlay' }]],
     'shortcut-cleanup',
     ['main', mainWindow],

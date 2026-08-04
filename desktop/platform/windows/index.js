@@ -35,6 +35,17 @@ module.exports = function createWindowsPlatform(options = {}) {
     },
     lifecycle: {
       quitWhenAllWindowsClosed: true,
+      configureApp: () => {
+        if (!options.app || typeof options.app.setAppUserModelId !== 'function') {
+          return { ok: false, error: 'APP_USER_MODEL_ID_UNAVAILABLE' };
+        }
+        try {
+          options.app.setAppUserModelId(String(options.appUserModelId || 'com.mineradio.desktop'));
+          return { ok: true };
+        } catch (_) {
+          return { ok: false, error: 'APP_USER_MODEL_ID_CONFIGURATION_FAILED' };
+        }
+      },
       onReady: successfulNoop,
       onActivate: successfulNoop,
       cleanup: successfulNoop,
