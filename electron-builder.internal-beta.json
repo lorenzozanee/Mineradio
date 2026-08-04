@@ -6,6 +6,7 @@
     "buildResources": "build"
   },
   "afterPack": "build/after-pack.js",
+  "afterAllArtifactBuild": "build/windows/after-all-artifact-build.js",
   "toolsets": {
     "winCodeSign": "1.1.0"
   },

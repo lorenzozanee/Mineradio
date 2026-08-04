@@ -12,8 +12,9 @@ concurrency:
 
 jobs:
   windows-x64:
-    name: Windows x64 package
+    name: Signed Windows x64 package
     runs-on: windows-2025
+    environment: release-signing
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -24,9 +25,23 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Build current Windows x64 package
+      - name: Prepare protected Authenticode certificate
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE_PFX) { throw 'WINDOWS_CERTIFICATE_PFX is required.' }
+          if (-not $env:WINDOWS_CERTIFICATE_PASSWORD) { throw 'WINDOWS_CERTIFICATE_PASSWORD is required.' }
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'mineradio-authenticode.pfx'
+          [System.IO.File]::WriteAllBytes($certificatePath, [System.Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX))
+          "WINDOWS_CERTIFICATE_PATH=$certificatePath" >> $env:GITHUB_ENV
+      - name: Build and sign Windows x64 package
+        env:
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_TIMESTAMP_URL: https://timestamp.digicert.com
         run: npm run build:win
-      - name: Verify Windows executable architecture
+      - name: Verify Windows architecture and Authenticode
         shell: pwsh
         run: |
           $bytes = [System.IO.File]::ReadAllBytes('dist/win-unpacked/Mineradio.exe')
@@ -34,6 +49,24 @@ jobs:
           $machine = [System.BitConverter]::ToUInt16($bytes, $peOffset + 4)
           if ($machine -ne 0x8664) {
             throw 'Mineradio.exe is not an x64 executable.'
+          }
+          $installers = @(Get-ChildItem 'dist/Mineradio-*-Setup.exe')
+          if ($installers.Count -ne 1) { throw "Expected one NSIS installer, found $($installers.Count)." }
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter signtool.exe -Recurse |
+            Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signTool) { throw 'Windows SDK x64 signtool.exe was not found.' }
+          & $signTool.FullName verify /pa /all 'dist/win-unpacked/Mineradio.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Main executable Authenticode verification failed.' }
+          & $signTool.FullName verify /pa /all $installers[0].FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Installer Authenticode verification failed.' }
+      - name: Remove Authenticode certificate
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:WINDOWS_CERTIFICATE_PATH -and (Test-Path $env:WINDOWS_CERTIFICATE_PATH)) {
+            Remove-Item -LiteralPath $env:WINDOWS_CERTIFICATE_PATH -Force
           }
       - name: Upload Windows validation artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

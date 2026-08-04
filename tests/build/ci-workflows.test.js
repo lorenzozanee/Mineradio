@@ -31,6 +31,11 @@ test('native packages only build through manual dispatch and protected signing e
   assert.match(workflow, /runs-on: windows-2025/);
   assert.match(workflow, /runs-on: macos-15/);
   assert.match(workflow, /environment: release-signing/);
+  assert.match(workflow, /WINDOWS_CERTIFICATE_PFX: \$\{\{ secrets\.WINDOWS_CERTIFICATE_PFX \}\}/);
+  assert.match(workflow, /WINDOWS_CERTIFICATE_PASSWORD: \$\{\{ secrets\.WINDOWS_CERTIFICATE_PASSWORD \}\}/);
+  assert.match(workflow, /Where-Object \{ \$_\.FullName -match '[^']+x64[^']+signtool[^']+' \}/);
+  assert.match(workflow, /& \$signTool\.FullName verify \/pa \/all 'dist\/win-unpacked\/Mineradio\.exe'/);
+  assert.match(workflow, /& \$signTool\.FullName verify \/pa \/all \$installers\[0\]\.FullName/);
   assert.match(workflow, /APPLE_API_KEY_P8: \$\{\{ secrets\.APPLE_API_KEY_P8 \}\}/);
   assert.match(workflow, /node build\/macos\/validate-dmg\.js/);
   assert.match(workflow, /npm run build:mac/);
