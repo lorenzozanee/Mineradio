@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { signWindowsFile } = require('./windows/signing');
 
 function findNewestRceditInCache(cacheRoot) {
   if (!cacheRoot || !fs.existsSync(cacheRoot)) return null;
@@ -66,5 +65,4 @@ module.exports = async function afterPack(context) {
     '--set-file-version', version,
     '--set-product-version', version
   ], { stdio: 'inherit' });
-  signWindowsFile(exePath);
 };

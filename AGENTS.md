@@ -17,7 +17,7 @@
 | Preload | `desktop/preload.js` exposes `window.desktopWindow`; `desktop/overlay-preload.js` exposes `window.desktopOverlay`. Main/overlay windows use `contextIsolation: true`, `nodeIntegration: false`, and currently `sandbox: false`. Login windows use the sandbox. |
 | Renderer | `public/index.html` loads vendored classic scripts and `public/js/index-loader.js`, which concatenates ordered files under `public/js/modules/`. There is no renderer bundler or module loader. |
 | Shared-looking code | `server.js`, provider APIs, `cuefield/`, `dj-analyzer.js`, most renderer modules, `desktop/local-music-library.js`, and `desktop/login-easter-egg-gate.js`. Audit hidden OS assumptions before classifying them as shared. |
-| Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/platform/windows/system-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `build/windows/` signing hooks, `.ico`/BMP resources, and `rcedit`. |
+| Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/platform/windows/system-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
 | macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, normalized global shortcuts, and explicit unsupported desktop-mode results. arm64 DMG configuration, minimum entitlements, protected signing/notarization hooks, and validators live under `build/macos/`. |
 | Tests | Existing tests remain mostly flat and mix `node:test` with self-running assertion scripts. Platform contract tests now live under `tests/contracts/` and `tests/platform/`. `scripts/quick-check.js` still orchestrates selected tests plus extensive source guards. |
 | Automation | `test`, `test:shared`, `test:platform`, `test:build`, and `test:smoke:macos` exist. Dual-platform contract CI and manually dispatched native package validation workflows exist. No Release publisher exists. |
@@ -48,13 +48,11 @@ Run commands from the repository root.
 | Windows full smoke | `quick-check.bat full` or `node scripts/quick-check.js --electron` | Requires installed dev dependencies and Windows. The checker currently resolves only `node_modules/electron/dist/electron.exe`; real main-entry recovery is also Windows-only. |
 | One `node:test` file | `node --test tests/<node-test-file>.test.js` | Use only for files that import `node:test`. |
 | One self-running test | `node tests/<self-running-file>.test.js` | Use for files with their own `main()`/`run()` harness. |
-| Windows installer | `npm run build:win` | Formal Windows-only x64 NSIS build; requires Authenticode credentials and fails closed when unavailable. |
-| Windows unpacked app | `npm run build:win:dir` | Formal Windows-only unpacked target; requires Authenticode credentials. |
-| Windows local unsigned installer | `npm run build:win:unsigned` | Explicit Windows-only local validation; never use as a release candidate. |
-| Windows local unsigned app | `npm run build:win:dir:unsigned` | Explicit Windows-only unpacked validation without Authenticode. |
+| Windows installer | `npm run build:win` | Builds the existing x64 NSIS installer to `dist/`; preserve this Windows path while adding macOS separately. |
+| Windows unpacked app | `npm run build:win:dir` | Builds the existing Windows directory target. |
 | Internal beta installer | `npm run build:win:internal-beta` | Uses `electron-builder.internal-beta.json`; never mix this artifact with a public release. |
 
-Do not claim a Release publisher command exists. `npm test`, the macOS smoke commands, and the signed/unsigned native build commands above are current; formal native success still requires the documented target-OS credentials and QA gates.
+No Release publisher command exists. `npm test`, the macOS smoke commands, and the separate Windows/macOS build commands above are current; formal native success still requires the documented target-OS credentials and QA gates.
 
 At the 2026-08-04 inspection, `node scripts/quick-check.js` on macOS with Node 26.4.0 initially failed the first FLAC metadata case because dependencies were absent. After `npm ci`, all six FLAC cases passed; the checker then failed the Wallpaper Engine library path assertion because macOS resolves `/var` to `/private/var`. Record both baselines; do not modify Windows-native assertions to manufacture a macOS pass or claim the full checker is green.
 
