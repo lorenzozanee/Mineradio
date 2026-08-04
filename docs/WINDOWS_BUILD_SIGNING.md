@@ -6,9 +6,10 @@
 
 - `WINDOWS_CERTIFICATE_PATH`：本机已有且使用绝对路径表示的 PFX 文件。
 - `WINDOWS_CERTIFICATE_PASSWORD`：PFX 密码。
+- `WINDOWS_CERTIFICATE_SHA1`：预期发布证书的 40 位 SHA-1 thumbprint；构建会拒绝任何身份不匹配的 PFX。
 - `WINDOWS_TIMESTAMP_URL`：可选的无凭据 HTTPS RFC 3161 时间戳地址，默认 `https://timestamp.digicert.com`。
 
-签名使用 SHA-256 文件摘要与 RFC 3161 SHA-256 时间戳，并在每次签名后执行 `signtool verify /pa /all`。GitHub Actions 只在受保护的 `release-signing` environment 内将 Base64 PFX 写入 runner 临时目录，并在构建后删除。
+PFX 密码只通过签名子进程的环境传入，不出现在 SignTool 命令行。每次签名会把 PFX 非导出地导入一个随机命名的临时 CurrentUser 证书存储，按受保护 thumbprint 选择证书，并在 `finally` 清除整个临时存储。签名使用 SHA-256 文件摘要与 RFC 3161 SHA-256 时间戳，并在每次签名后执行 `signtool verify /pa /all`。GitHub Actions 还会复核主 EXE 和安装器的实际 signer thumbprint；PFX 文件只写入受保护 `release-signing` environment 的 runner 临时目录，并在构建后删除。
 
 本地只验证 unsigned 布局时，使用：
 

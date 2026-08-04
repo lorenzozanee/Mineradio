@@ -30,12 +30,16 @@ jobs:
         env:
           WINDOWS_CERTIFICATE_PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_CERTIFICATE_SHA1: ${{ vars.WINDOWS_CERTIFICATE_SHA1 }}
         run: |
           if (-not $env:WINDOWS_CERTIFICATE_PFX) { throw 'WINDOWS_CERTIFICATE_PFX is required.' }
           if (-not $env:WINDOWS_CERTIFICATE_PASSWORD) { throw 'WINDOWS_CERTIFICATE_PASSWORD is required.' }
+          $thumbprint = ($env:WINDOWS_CERTIFICATE_SHA1 -replace '\s', '').ToUpperInvariant()
+          if ($thumbprint -notmatch '^[A-F0-9]{40}$') { throw 'WINDOWS_CERTIFICATE_SHA1 must be a protected 40-character thumbprint.' }
           $certificatePath = Join-Path $env:RUNNER_TEMP 'mineradio-authenticode.pfx'
           [System.IO.File]::WriteAllBytes($certificatePath, [System.Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX))
           "WINDOWS_CERTIFICATE_PATH=$certificatePath" >> $env:GITHUB_ENV
+          "WINDOWS_CERTIFICATE_SHA1=$thumbprint" >> $env:GITHUB_ENV
       - name: Build and sign Windows x64 package
         env:
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
@@ -61,6 +65,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Main executable Authenticode verification failed.' }
           & $signTool.FullName verify /pa /all $installers[0].FullName
           if ($LASTEXITCODE -ne 0) { throw 'Installer Authenticode verification failed.' }
+          foreach ($file in @('dist/win-unpacked/Mineradio.exe', $installers[0].FullName)) {
+            $signature = Get-AuthenticodeSignature -FilePath $file
+            if (-not $signature.SignerCertificate) { throw "No signer certificate found for $file." }
+            if ($signature.SignerCertificate.Thumbprint -ne $env:WINDOWS_CERTIFICATE_SHA1) {
+              throw "Unexpected Authenticode certificate for $file."
+            }
+          }
       - name: Remove Authenticode certificate
         if: always()
         shell: pwsh
