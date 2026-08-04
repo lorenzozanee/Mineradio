@@ -2,15 +2,49 @@
 
 function createApplicationMenuTemplate() {
   return [
-    { role: 'appMenu' },
-    { role: 'editMenu' },
+    {
+      role: 'appMenu',
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    {
+      role: 'editMenu',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'pasteAndMatchStyle' },
+        { role: 'delete' },
+        { role: 'selectAll' },
+      ],
+    },
     {
       label: '显示',
       submenu: [
         { role: 'togglefullscreen' },
       ],
     },
-    { role: 'windowMenu' },
+    {
+      role: 'windowMenu',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        { type: 'separator' },
+        { role: 'front' },
+      ],
+    },
   ];
 }
 

@@ -21,6 +21,10 @@ const {
   findPrivatePaths
 } = require('../../build/macos/validate-dmg');
 
+const MACOS_RESOURCES = path.resolve(__dirname, '../../build/macos');
+const ICNS_PATH = path.join(MACOS_RESOURCES, 'icon.icns');
+const DMG_BG_PATH = path.join(MACOS_RESOURCES, 'dmg-background.png');
+
 test('macOS production configuration is arm64-only and fails closed without signing', function() {
   const config = createMacConfiguration({});
 
@@ -182,4 +186,21 @@ test('artifact helpers reject non-arm64 binaries and private runtime files', fun
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('macOS build resources include a valid .icns icon and DMG background', function() {
+  assert.ok(fs.existsSync(ICNS_PATH), 'icon.icns must exist');
+  const icnsContent = fs.readFileSync(ICNS_PATH);
+  assert.ok(icnsContent.length > 0, 'icon.icns must not be empty');
+  assert.ok(fs.existsSync(DMG_BG_PATH), 'dmg-background.png must exist');
+  const bgContent = fs.readFileSync(DMG_BG_PATH);
+  assert.ok(bgContent.length > 0, 'dmg-background.png must not be empty');
+});
+
+test('macOS build config references the .icns icon and DMG background', function() {
+  const config = createMacConfiguration({});
+  assert.equal(config.mac.icon, 'build/macos/icon.icns');
+  assert.equal(config.dmg.background, 'build/macos/dmg-background.png');
+  assert.equal(config.dmg.window.width, 660);
+  assert.equal(config.dmg.window.height, 400);
 });

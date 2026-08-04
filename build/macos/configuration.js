@@ -36,7 +36,7 @@ function createMacConfiguration(env = process.env) {
     afterSign: 'build/macos/notarize.js',
     mac: {
       category: 'public.app-category.music',
-      icon: 'build/icon.png',
+      icon: 'build/macos/icon.icns',
       target: [
         {
           target: 'dmg',
@@ -59,15 +59,22 @@ function createMacConfiguration(env = process.env) {
     dmg: {
       artifactName: 'Mineradio-${version}-macOS-arm64.${ext}',
       sign: false,
+      background: 'build/macos/dmg-background.png',
+      window: {
+        width: 660,
+        height: 400,
+      },
+      iconSize: 128,
+      iconTextSize: 14,
       contents: [
         {
           x: 130,
-          y: 220,
+          y: 200,
           type: 'file'
         },
         {
           x: 410,
-          y: 220,
+          y: 200,
           type: 'link',
           path: '/Applications'
         }

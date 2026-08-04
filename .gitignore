@@ -47,6 +47,8 @@ backups/
 *.cache
 .env
 .env.*
+.claude/
+build/macos/icon.iconset/
 
 # Local development noise
 .DS_Store
