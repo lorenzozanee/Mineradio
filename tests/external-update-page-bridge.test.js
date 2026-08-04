@@ -8,11 +8,10 @@ const mainText = fs.readFileSync(path.join(appRoot, 'desktop', 'main.js'), 'utf8
 const preloadText = fs.readFileSync(path.join(appRoot, 'desktop', 'preload.js'), 'utf8');
 
 test('desktop update bridge opens only bounded HTTPS pages from the trusted main document', () => {
-  assert.match(mainText, /ipcMain\.handle\('mineradio-open-update-page', async \(event, value\) =>/);
+  assert.match(mainText, /trustedIpcMain\.handle\('mineradio-open-update-page', async \(event, value\) =>/);
   assert.match(mainText, /if \(!isTrustedMainWindowIpc\(event\)\) return \{ ok: false, error: 'UNTRUSTED_SENDER' \}/);
-  assert.match(mainText, /target\.length > 2048/);
-  assert.match(mainText, /parsed\.protocol !== 'https:'/);
-  assert.match(mainText, /await shell\.openExternal\(parsed\.href\)/);
+  assert.match(mainText, /validateExternalNavigation\(value, MAIN_EXTERNAL_NAVIGATION_POLICY\)/);
+  assert.match(mainText, /await shell\.openExternal\(target\.url\)/);
   assert.match(preloadText, /openUpdatePage: \(url\) => ipcRenderer\.invoke\('mineradio-open-update-page', String\(url \|\| ''\)\)/);
 });
 
