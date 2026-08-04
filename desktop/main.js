@@ -11,7 +11,6 @@ const {
   createExternalNavigationPolicy,
   validateExternalNavigation,
 } = require('./shared/external-navigation-validation');
-const systemMemory = require('./system-memory');
 const {
   WallpaperEngineLibrary,
   registerWallpaperEngineScheme,
@@ -60,19 +59,7 @@ let appMemoryTrimInFlight = false;
 let lastAppMemoryTrimAt = 0;
 let lastAppMemoryTrimReason = '';
 let memoryAutoTimer = null;
-let memoryAutoState = {
-  appTrimEnabled: true,
-  backgroundTrimEnabled: true,
-  enabled: false,
-  mask: systemMemory.MEMORY_MASK_DEFAULT,
-  intervalMin: 30,
-  thresholdPercent: 78,
-  autoElevate: false,
-  lastRunAt: 0,
-  lastReason: '',
-  lastResult: null,
-  lastError: '',
-};
+let memoryAutoState = null;
 let closeBehavior = 'exit';
 let appQuitting = false;
 let appQuitCleanupPromise = null;
@@ -162,6 +149,20 @@ const platform = createPlatform({
     getStatus: desktopModePlatformStatus,
   },
 });
+const systemMemory = platform.systemMemory;
+memoryAutoState = {
+  appTrimEnabled: true,
+  backgroundTrimEnabled: true,
+  enabled: false,
+  mask: systemMemory.MEMORY_MASK_DEFAULT,
+  intervalMin: 30,
+  thresholdPercent: 78,
+  autoElevate: false,
+  lastRunAt: 0,
+  lastReason: '',
+  lastResult: null,
+  lastError: '',
+};
 
 // Keep app-owned settings and provider credentials independent from the
 // user-selectable Chromium cache. app.setName() must run before the first
@@ -4450,7 +4451,7 @@ ipcMain.handle('mineradio-local-library-authorize', async (event, payload = {}) 
     } catch (_) {
       continue;
     }
-    const identity = platform.nodePlatform === 'win32' ? filePath.toLowerCase() : filePath;
+    const identity = localMusicLibrary.pathIdentity(filePath);
     if (seen.has(identity)) continue;
     seen.add(identity);
     files.push({

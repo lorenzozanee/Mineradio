@@ -1,6 +1,7 @@
 'use strict';
 
 const { createPlatformContract } = require('../contract');
+const systemMemory = require('./system-memory');
 
 function successfulNoop() {
   return { ok: true };
@@ -43,6 +44,7 @@ module.exports = function createWindowsPlatform(options = {}) {
       chromiumSwitches: () => [['use-angle', 'd3d11']],
     },
     shortcuts,
+    systemMemory,
     window: {
       mainOptions: () => options.appIcon ? { icon: options.appIcon } : {},
       configureMainWindow: successfulNoop,

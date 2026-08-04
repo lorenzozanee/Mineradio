@@ -59,6 +59,16 @@ function createPlatformContract(options = {}) {
   assertService('lifecycle', options.lifecycle, ['onReady', 'onActivate', 'cleanup']);
   assertService('runtime', options.runtime, ['chromiumSwitches']);
   assertService('shortcuts', options.shortcuts, ['configure', 'cleanup']);
+  assertService('systemMemory', options.systemMemory, [
+    'setNativeTempPath',
+    'getMemorySnapshot',
+    'getMemorySnapshotExtended',
+    'normalizeMask',
+    'probeProcessElevation',
+    'isProcessElevated',
+    'purgeSystemMemorySmart',
+    'trimAppWorkingSets',
+  ]);
   assertService('window', options.window, [
     'mainOptions',
     'configureMainWindow',
@@ -88,6 +98,19 @@ function createPlatformContract(options = {}) {
     configure: options.shortcuts.configure,
     cleanup: options.shortcuts.cleanup,
   });
+  const systemMemory = Object.freeze({
+    MEMORY_MASK_DEFAULT: Number(options.systemMemory.MEMORY_MASK_DEFAULT) || 0,
+    SYSTEM_PURGE_AVAILABLE: options.systemMemory.SYSTEM_PURGE_AVAILABLE === true,
+    SYSTEM_PURGE_ENABLED: options.systemMemory.SYSTEM_PURGE_ENABLED === true,
+    setNativeTempPath: options.systemMemory.setNativeTempPath,
+    getMemorySnapshot: options.systemMemory.getMemorySnapshot,
+    getMemorySnapshotExtended: options.systemMemory.getMemorySnapshotExtended,
+    normalizeMask: options.systemMemory.normalizeMask,
+    probeProcessElevation: options.systemMemory.probeProcessElevation,
+    isProcessElevated: options.systemMemory.isProcessElevated,
+    purgeSystemMemorySmart: options.systemMemory.purgeSystemMemorySmart,
+    trimAppWorkingSets: options.systemMemory.trimAppWorkingSets,
+  });
   const desktopMode = Object.freeze({
     enable: options.desktopMode.enable,
     disable: options.desktopMode.disable,
@@ -101,6 +124,7 @@ function createPlatformContract(options = {}) {
     lifecycle,
     runtime,
     shortcuts,
+    systemMemory,
     window,
     desktopMode,
     supports(capability) {

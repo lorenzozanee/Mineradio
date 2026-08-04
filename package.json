@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "test:shared": "node --test tests/shared/injected-platform-dependencies.test.js tests/shared/ipc-payload-validation.test.js tests/shared/external-navigation-validation.test.js tests/contracts/server-local-data-paths.test.js tests/contracts/path-identity.test.js",
-    "test:platform": "node --test tests/contracts/platform-contract.test.js tests/contracts/platform-ipc-boundary.test.js tests/contracts/platform-renderer-capabilities.test.js tests/contracts/renderer-platform-ux.test.js tests/platform/windows/platform.test.js tests/platform/macos/platform.test.js tests/platform/macos/application-menu.test.js tests/platform/macos/shortcuts.test.js",
+    "test:platform": "node --test tests/contracts/platform-contract.test.js tests/contracts/platform-ipc-boundary.test.js tests/contracts/platform-renderer-capabilities.test.js tests/contracts/renderer-platform-ux.test.js tests/platform/windows/platform.test.js tests/platform/macos/platform.test.js tests/platform/macos/application-menu.test.js tests/platform/macos/shortcuts.test.js tests/platform/macos/system-memory.test.js",
     "build:win": "electron-builder --win nsis",
     "build:win:dir": "electron-builder --win dir",
     "build:win:internal-beta": "electron-builder --config electron-builder.internal-beta.json --win nsis --publish never"

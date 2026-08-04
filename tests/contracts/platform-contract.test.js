@@ -48,6 +48,22 @@ function shortcutService() {
   };
 }
 
+function systemMemoryService() {
+  return {
+    MEMORY_MASK_DEFAULT: 29,
+    SYSTEM_PURGE_AVAILABLE: false,
+    SYSTEM_PURGE_ENABLED: false,
+    setNativeTempPath: () => ({ ok: true }),
+    getMemorySnapshot: () => ({ platform: 'darwin' }),
+    getMemorySnapshotExtended: async () => ({ platform: 'darwin' }),
+    normalizeMask: value => Number(value) || 29,
+    probeProcessElevation: async () => false,
+    isProcessElevated: async () => false,
+    purgeSystemMemorySmart: async () => ({ ok: false, unsupported: true }),
+    trimAppWorkingSets: async () => ({ ok: false, unsupported: true }),
+  };
+}
+
 test('platform contract exposes a bounded serializable capability snapshot', () => {
   const platform = createPlatformContract({
     id: 'fixture',
@@ -56,6 +72,7 @@ test('platform contract exposes a bounded serializable capability snapshot', () 
     lifecycle: lifecycleService(false),
     runtime: runtimeService(),
     shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   });
@@ -77,6 +94,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
     shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /Unknown platform capabilities/);
@@ -87,6 +105,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
     shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: {},
   }), /desktopMode\.enable/);
@@ -97,6 +116,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     lifecycle: {},
     runtime: runtimeService(),
     shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /lifecycle\.onReady/);
@@ -107,6 +127,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
     shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
     window: {},
     desktopMode: desktopModeService(),
   }), /window\.mainOptions/);
@@ -117,6 +138,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     lifecycle: lifecycleService(),
     runtime: {},
     shortcuts: shortcutService(),
+    systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /runtime\.chromiumSwitches/);
@@ -127,9 +149,21 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     lifecycle: lifecycleService(),
     runtime: runtimeService(),
     shortcuts: {},
+    systemMemory: systemMemoryService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /shortcuts\.configure/);
+  assert.throws(() => createPlatformContract({
+    id: 'fixture',
+    nodePlatform: 'darwin',
+    capabilities: {},
+    lifecycle: lifecycleService(),
+    runtime: runtimeService(),
+    shortcuts: shortcutService(),
+    systemMemory: {},
+    window: windowService(),
+    desktopMode: desktopModeService(),
+  }), /systemMemory\.setNativeTempPath/);
 });
 
 test('platform lifecycle and window services preserve adapter behavior', async () => {
@@ -152,6 +186,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
       configure: bindings => { calls.push(['shortcuts', bindings]); return { ok: true }; },
       cleanup: () => { calls.push('shortcut-cleanup'); return { ok: true }; },
     },
+    systemMemory: systemMemoryService(),
     window: {
       mainOptions: () => ({ titleBarStyle: 'hiddenInset' }),
       configureMainWindow: win => { calls.push(['main', win]); return { ok: true }; },
@@ -165,6 +200,8 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   assert.deepEqual(platform.window.mainOptions(), { titleBarStyle: 'hiddenInset' });
   assert.deepEqual(platform.runtime.chromiumSwitches(), [['fixture-switch', 'fixture-value']]);
   assert.equal(platform.runtime.caseInsensitivePaths, false);
+  assert.equal(platform.systemMemory.SYSTEM_PURGE_AVAILABLE, false);
+  assert.deepEqual(platform.systemMemory.getMemorySnapshot(), { platform: 'darwin' });
   assert.deepEqual(platform.shortcuts.configure([{ action: 'togglePlay' }]), { ok: true });
   assert.deepEqual(platform.shortcuts.cleanup(), { ok: true });
   assert.deepEqual(platform.window.desktopLyricsOptions(), { type: 'panel' });

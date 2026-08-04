@@ -3,6 +3,7 @@
 const { createPlatformContract, unsupportedResult } = require('../contract');
 const { installApplicationMenu } = require('./application-menu');
 const { createMacosGlobalShortcutService } = require('./shortcuts');
+const systemMemory = require('./system-memory');
 
 function configureMainWindow(win) {
   if (!win || typeof win.setWindowButtonVisibility !== 'function') return { ok: true };
@@ -61,6 +62,7 @@ module.exports = function createMacosPlatform(options = {}) {
       chromiumSwitches: () => [],
     },
     shortcuts,
+    systemMemory,
     window: {
       mainOptions: () => ({
         frame: true,

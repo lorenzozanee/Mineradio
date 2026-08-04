@@ -353,7 +353,7 @@ function checkWallpaperEngineImportGuard() {
   const preloadText = fs.readFileSync(path.join(appRoot, 'desktop', 'preload.js'), 'utf8');
   const libraryText = fs.readFileSync(path.join(appRoot, 'desktop', 'wallpaper-engine-library.js'), 'utf8');
   const runtimeText = fs.readFileSync(path.join(appRoot, 'desktop', 'wallpaper-engine-runtime.js'), 'utf8');
-  const systemMemoryText = fs.readFileSync(path.join(appRoot, 'desktop', 'system-memory.js'), 'utf8');
+  const systemMemoryText = fs.readFileSync(path.join(appRoot, 'desktop', 'platform', 'windows', 'system-memory.js'), 'utf8');
   const lifecycleText = fs.readFileSync(path.join(appRoot, 'scripts', 'check-wallpaper-engine-lifecycle.js'), 'utf8');
   if (!/id="custom-bg"/.test(htmlText) || !/id="bg-image-value"/.test(htmlText) || !/id="wallpaper-engine-layer"/.test(htmlText) || !/id="wallpaper-engine-modal"/.test(htmlText)) {
     fail('Wallpaper Engine import must be additive and keep the original background-media controls');
