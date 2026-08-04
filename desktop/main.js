@@ -11,6 +11,7 @@ const {
   createExternalNavigationPolicy,
   validateExternalNavigation,
 } = require('./shared/external-navigation-validation');
+const { resolveStartupQaUserDataPath } = require('./shared/startup-qa-paths');
 const {
   WallpaperEngineLibrary,
   registerWallpaperEngineScheme,
@@ -173,11 +174,7 @@ memoryAutoState = {
 // user-selectable Chromium cache. app.setName() must run before the first
 // derived path lookup or Electron can recompute userData below the cache root.
 app.setName(APP_NAME);
-const STARTUP_QA_USER_DATA_PATH = (() => {
-  const value = String(process.env.MINERADIO_STARTUP_QA_USER_DATA || '').trim();
-  if (process.env.MINERADIO_STARTUP_QA_HIDDEN !== '1' || !value || !path.isAbsolute(value)) return '';
-  return path.resolve(value);
-})();
+const STARTUP_QA_USER_DATA_PATH = resolveStartupQaUserDataPath();
 const STABLE_USER_DATA_PATH = STARTUP_QA_USER_DATA_PATH || path.join(app.getPath('appData'), APP_NAME);
 fs.mkdirSync(STABLE_USER_DATA_PATH, { recursive: true });
 app.setPath('userData', STABLE_USER_DATA_PATH);
