@@ -424,7 +424,7 @@
           <button class="fx-mini-btn ghost" type="button" onclick="clearCustomBackgroundImage()">清除</button>
         </div>
       </div>
-      <div class="lyric-color-row image-pick-row wallpaper-engine-row">
+      <div class="lyric-color-row image-pick-row wallpaper-engine-row" data-platform-capability="wallpaperEngine" hidden>
         <div class="wallpaper-engine-mark" aria-hidden="true">WE</div>
         <div class="fx-color-row-label">Wallpaper Engine<small id="wallpaper-engine-value">未启用 · 原背景保留</small></div>
         <div class="wallpaper-engine-actions">
@@ -801,6 +801,7 @@
             <div class="fx-toggle" id="t-desktopLyricsHighlight" onclick="toggleFx('desktopLyricsHighlight')"
               title="桌面歌词按播放进度高亮"><span>桌面歌词高亮跟随</span><span class="dot"></span></div>
             <div class="fx-toggle" id="t-wallpaperMode" onclick="toggleFx('wallpaperMode')"
+              data-platform-capability="fullDesktopMode" hidden
               title="把当前完整 Mineradio 放到 Windows 桌面；右上控制器可显示、隐藏桌面图标，Esc 退出">
               <span>完整桌面模式<em class="fx-dev-badge">试验</em></span><span class="dot"></span></div>
           </div>
@@ -819,7 +820,7 @@
             <button data-desktop-lyrics-fps="120">120</button>
             <button data-desktop-lyrics-fps="0">无上限</button>
           </div>
-          <div class="desktop-mode-note">开启后可在右上控制器显示或隐藏 Windows 桌面图标；按 Esc 直接退出。重启默认关闭。</div>
+          <div class="desktop-mode-note" data-platform-capability="fullDesktopMode" hidden>开启后可在右上控制器显示或隐藏 Windows 桌面图标；按 Esc 直接退出。重启默认关闭。</div>
           <div class="fx-section-label" hidden>壁纸帧数</div>
           <div class="fx-seg" id="wallpaper-fps-seg" hidden>
             <button data-wallpaper-fps="24">24</button>
@@ -947,7 +948,7 @@
           <div class="fx-section-label">关闭窗口</div>
           <div class="fx-seg" id="close-behavior-seg" title="点击右上角关闭按钮时的行为">
             <button data-close-behavior="exit">直接退出</button>
-            <button data-close-behavior="tray">后台托盘</button>
+            <button data-close-behavior="tray" data-platform-capability="tray" hidden>后台托盘</button>
           </div>
           <div class="fx-section-label">启动播放</div>
           <div class="fx-toggle-grid">
@@ -1655,6 +1656,7 @@
     </div>
 
     <div id="wallpaper-engine-modal" class="modal-mask" role="dialog" aria-modal="true"
+      data-platform-capability="wallpaperEngine" hidden
       aria-labelledby="wallpaper-engine-modal-title" onclick="if(event.target===this)closeWallpaperEngineLibrary()">
       <div class="modal wallpaper-engine-library-modal">
         <div class="wallpaper-engine-library-head">
@@ -1849,7 +1851,8 @@
 
   </div>
 
-  <div id="desktop-mode-control-dock" aria-label="桌面模式控制器">
+  <div id="desktop-mode-control-dock" aria-label="桌面模式控制器"
+    data-platform-capability="fullDesktopMode" hidden>
     <button id="desktop-mode-control-handle" type="button" title="打开桌面模式控制"
       aria-label="打开桌面模式控制" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24" aria-hidden="true">

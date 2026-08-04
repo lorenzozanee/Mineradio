@@ -14,6 +14,21 @@ var desktopWallpaperRuntimeState = {
   generation: -1,
   lastError: ''
 };
+window.addEventListener('mineradio:platform-capabilities', function (event) {
+  var capabilities = event && event.detail && event.detail.capabilities || {};
+  var supported = capabilities.fullDesktopMode === true;
+  desktopWallpaperRuntimeState = Object.assign({}, desktopWallpaperRuntimeState, {
+    supported: supported,
+    active: supported ? desktopWallpaperRuntimeState.active === true : false,
+    enabled: supported ? desktopWallpaperRuntimeState.enabled === true : false,
+    interactive: supported ? desktopWallpaperRuntimeState.interactive === true : false,
+    lastError: supported ? desktopWallpaperRuntimeState.lastError : 'PLATFORM_CAPABILITY_UNSUPPORTED'
+  });
+  if (!supported && typeof fx !== 'undefined' && fx) fx.wallpaperMode = false;
+  if (typeof updateDesktopWallpaperRuntimeControls === 'function') {
+    updateDesktopWallpaperRuntimeControls(desktopWallpaperRuntimeState);
+  }
+});
 var desktopWallpaperStatusGeneration = -1;
 var desktopWallpaperStatusUnsubscribe = null;
 var desktopWallpaperRendererOperation = 0;
@@ -1333,6 +1348,7 @@ function applyDesktopWallpaperRuntimeStatus(payload) {
 }
 function desktopWallpaperErrorLabel(error) {
   var code = String(error || 'WALLPAPER_FAILED');
+  if (code.indexOf('PLATFORM_CAPABILITY_UNSUPPORTED') >= 0) return '当前系统不支持';
   if (code.indexOf('WALLPAPER_PLATFORM_UNSUPPORTED') >= 0) return '当前系统不支持';
   if (code.indexOf('WALLPAPER_WORKERW_NOT_FOUND') >= 0) return '未找到桌面 WorkerW';
   if (code.indexOf('WALLPAPER_PROGMAN_NOT_FOUND') >= 0) return '未找到 Windows 桌面宿主';

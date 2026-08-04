@@ -9,6 +9,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
+    "test:platform": "node --test tests/contracts/platform-contract.test.js tests/contracts/platform-ipc-boundary.test.js tests/contracts/platform-renderer-capabilities.test.js tests/platform/windows/platform.test.js tests/platform/macos/platform.test.js",
     "build:win": "electron-builder --win nsis",
     "build:win:dir": "electron-builder --win dir",
     "build:win:internal-beta": "electron-builder --config electron-builder.internal-beta.json --win nsis --publish never"

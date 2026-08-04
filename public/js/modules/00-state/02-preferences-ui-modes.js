@@ -73,15 +73,25 @@ function syncCloseBehaviorUi() {
     btn.classList.toggle('active', btn.getAttribute('data-close-behavior') === closeBehaviorPreference);
   });
 }
-function setCloseBehaviorPreference(value, opts) {
-  opts = opts || {};
+function applyCloseBehaviorPreference(value) {
   closeBehaviorPreference = normalizeCloseBehavior(value);
   saveCloseBehaviorPreference(closeBehaviorPreference);
   syncCloseBehaviorUi();
+}
+function showCloseBehaviorToast() {
+  showToast(closeBehaviorPreference === 'tray' ? '关闭按钮将放到后台托盘' : '关闭按钮将直接退出');
+}
+function setCloseBehaviorPreference(value, opts) {
+  opts = opts || {};
+  applyCloseBehaviorPreference(value);
   if (window.desktopWindow && typeof window.desktopWindow.setCloseBehavior === 'function') {
-    window.desktopWindow.setCloseBehavior(closeBehaviorPreference).catch(function (e) { console.warn('[CloseBehavior]', e); });
+    window.desktopWindow.setCloseBehavior(closeBehaviorPreference).then(function (result) {
+      applyCloseBehaviorPreference(result && result.behavior);
+      if (opts.toast) showCloseBehaviorToast();
+    }).catch(function (e) { console.warn('[CloseBehavior]', e); });
+    return;
   }
-  if (opts.toast) showToast(closeBehaviorPreference === 'tray' ? '关闭按钮将放到后台托盘' : '关闭按钮将直接退出');
+  if (opts.toast) showCloseBehaviorToast();
 }
 function bindCloseBehaviorControls() {
   var seg = document.getElementById('close-behavior-seg');

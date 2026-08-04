@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
+const { createPlatform } = require('./platform');
 const systemMemory = require('./system-memory');
 const {
   WallpaperEngineLibrary,
@@ -128,6 +129,13 @@ const KUGOU_LOGIN_PARTITION = 'persist:mineradio-kugou-login';
 const KUGOU_LOGIN_URL = 'https://www.kugou.com/';
 const KUGOU_LOGIN_WARMUP_URL = 'https://www.kugou.com/newuc/user/uc/type=edit';
 const SPOTIFY_LOGIN_PARTITION = 'persist:mineradio-spotify-login';
+const platform = createPlatform({
+  desktopMode: {
+    enable: createWallpaperWindow,
+    disable: closeWallpaperWindow,
+    getStatus: desktopModePlatformStatus,
+  },
+});
 
 // Keep app-owned settings and provider credentials independent from the
 // user-selectable Chromium cache. app.setName() must run before the first
@@ -165,7 +173,7 @@ const wallpaperEngineRuntime = new WallpaperEngineRuntime({
 });
 const fullDesktopModeRuntime = new FullDesktopModeRuntime({
   screen,
-  platform: process.platform,
+  platform: platform.nodePlatform,
   execFileImpl: execFile,
   nativeTempPath: NATIVE_HELPER_TEMP_PATH,
   beforePassive: ({ win, reason }) => prepareWallpaperEngineProjectPreviewBeforeDesktopEmbedding(win, reason),
@@ -1895,7 +1903,7 @@ async function trimAppMemoryNow(reason) {
 }
 
 function scheduleAppMemoryTrim(reason, delay = 9000) {
-  if (process.platform !== 'win32') return;
+  if (platform.nodePlatform !== 'win32') return;
   if (memoryAutoState.appTrimEnabled === false || memoryAutoState.backgroundTrimEnabled === false) return;
   if (Date.now() - lastAppMemoryTrimAt < 120000) return;
   if (appMemoryTrimTimer) clearTimeout(appMemoryTrimTimer);
@@ -1972,7 +1980,7 @@ async function runMemoryAutoTick(reason = 'auto') {
 }
 
 function normalizeCloseBehavior(value) {
-  return value === 'tray' ? 'tray' : 'exit';
+  return value === 'tray' && platform.supports('tray') ? 'tray' : 'exit';
 }
 
 function resetMainWindowZoom(win = mainWindow) {
@@ -2012,7 +2020,7 @@ function focusMainWindow() {
 }
 
 function createOrUpdateTray() {
-  if (process.platform !== 'win32' && process.platform !== 'linux') return;
+  if (platform.nodePlatform !== 'win32') return;
   if (!tray) {
     try {
       tray = new Tray(APP_ICON_ICO);
@@ -2136,7 +2144,7 @@ function writeStartupErrorLog(context, code, error) {
     `context=${context || 'unknown'}`,
     `app=${APP_NAME}`,
     `version=${APP_PACKAGE_INFO.version || ''}`,
-    `platform=${process.platform}`,
+    `platform=${platform.nodePlatform}`,
     `arch=${process.arch}`,
     `pid=${process.pid}`,
     `userData=${(() => { try { return app.getPath('userData'); } catch (_) { return ''; } })()}`,
@@ -2224,7 +2232,7 @@ function bindStartupFailureHandlers() {
 bindStartupFailureHandlers();
 
 function shouldEnsureDesktopShortcut() {
-  if (process.platform !== 'win32') return false;
+  if (platform.nodePlatform !== 'win32') return false;
   if (process.env.MINERADIO_NO_DESKTOP_SHORTCUT === '1') return false;
   return app.isPackaged || process.env.MINERADIO_CREATE_DESKTOP_SHORTCUT === '1';
 }
@@ -3484,7 +3492,7 @@ function handleDesktopLyricsGlobalMiddleClick() {
 }
 
 function startDesktopLyricsMousePoller() {
-  if (process.platform !== 'win32' || desktopLyricsMousePoller) return;
+  if (platform.nodePlatform !== 'win32' || desktopLyricsMousePoller) return;
   const script = `
 $ErrorActionPreference = "SilentlyContinue"
 Add-Type @"
@@ -3656,7 +3664,7 @@ function nativeWindowHandleDecimal(win) {
 }
 
 function hookExplorerRestartForFullDesktop(win) {
-  if (process.platform !== 'win32' || !win || win.isDestroyed() || typeof win.hookWindowMessage !== 'function') return;
+  if (platform.nodePlatform !== 'win32' || !win || win.isDestroyed() || typeof win.hookWindowMessage !== 'function') return;
   if (win.__mineradioTaskbarCreatedHookPending || win.__mineradioTaskbarCreatedMessageId) return;
   win.__mineradioTaskbarCreatedHookPending = true;
   const script = `
@@ -3728,6 +3736,20 @@ function closeOverlayWindows(reason = 'overlay-close') {
   });
 }
 
+function desktopModePlatformStatus(reason = 'renderer-query') {
+  const status = {
+    ...fullDesktopModeRuntime.getStatus(reason),
+    recoveryTrayAvailable: !!tray,
+    escapeShortcutRegistered: fullDesktopEscapeRegistered === true,
+  };
+  return {
+    ok: true,
+    enabled: status.enabled === true,
+    interactive: status.interactive === true,
+    status,
+  };
+}
+
 ipcMain.handle('desktop-window-minimize', async (event) => {
   const win = getSenderWindow(event);
   if (win === mainWindow && fullDesktopModeRuntime.getStatus('window-minimize').enabled === true) {
@@ -3781,6 +3803,11 @@ ipcMain.handle('desktop-window-exit-fullscreen-windowed', (event) => {
 
 ipcMain.handle('desktop-window-get-state', (event) => {
   return getWindowState(getSenderWindow(event));
+});
+
+ipcMain.handle('mineradio-platform-capabilities', (event) => {
+  if (!isTrustedMainWindowIpc(event)) return { ok: false, error: 'PLATFORM_UNTRUSTED_SENDER' };
+  return platform.snapshot();
 });
 
 ipcMain.on('mineradio-full-desktop-icon-shields', (event, payload = {}) => {
@@ -4394,7 +4421,7 @@ ipcMain.handle('mineradio-local-library-authorize', async (event, payload = {}) 
     } catch (_) {
       continue;
     }
-    const identity = process.platform === 'win32' ? filePath.toLowerCase() : filePath;
+    const identity = platform.nodePlatform === 'win32' ? filePath.toLowerCase() : filePath;
     if (seen.has(identity)) continue;
     seen.add(identity);
     files.push({
@@ -4733,8 +4760,8 @@ ipcMain.handle('mineradio-desktop-lyrics-move-by', async (_event, dx, dy) => {
 ipcMain.handle('mineradio-wallpaper-set-enabled', async (event, enabled, payload) => {
   try {
     if (!isTrustedMainWindowIpc(event)) return { ok: false, enabled: false, error: 'WALLPAPER_UNTRUSTED_SENDER' };
-    if (enabled) return await createWallpaperWindow(payload || {});
-    return await closeWallpaperWindow('renderer-disabled');
+    if (enabled) return await platform.desktopMode.enable(payload || {});
+    return await platform.desktopMode.disable('renderer-disabled');
   } catch (e) {
     return { ok: false, enabled: false, error: e.message || 'WALLPAPER_FAILED', status: fullDesktopModeRuntime.getStatus('ipc-failed') };
   }
@@ -4742,24 +4769,12 @@ ipcMain.handle('mineradio-wallpaper-set-enabled', async (event, enabled, payload
 
 ipcMain.handle('mineradio-wallpaper-update', async (event) => {
   if (!isTrustedMainWindowIpc(event)) return { ok: false, enabled: false, error: 'WALLPAPER_UNTRUSTED_SENDER' };
-  const status = {
-    ...fullDesktopModeRuntime.getStatus('renderer-update'),
-    recoveryTrayAvailable: !!tray,
-    escapeShortcutRegistered: fullDesktopEscapeRegistered === true,
-  };
-  return { ok: true, enabled: status.enabled === true, interactive: status.interactive === true, status };
+  return platform.desktopMode.getStatus('renderer-update');
 });
 
 ipcMain.handle('mineradio-wallpaper-get-status', async (event) => {
   if (!isTrustedMainWindowIpc(event)) return { ok: false, enabled: false, error: 'WALLPAPER_UNTRUSTED_SENDER' };
-  return {
-    ok: true,
-    status: {
-      ...fullDesktopModeRuntime.getStatus('renderer-query'),
-      recoveryTrayAvailable: !!tray,
-      escapeShortcutRegistered: fullDesktopEscapeRegistered === true,
-    },
-  };
+  return platform.desktopMode.getStatus('renderer-query');
 });
 
 function configureLocalServerEnvironment(port) {
@@ -5547,7 +5562,7 @@ function createWindow() {
   return mainWindowCreatePromise;
 }
 
-if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
+if (platform.nodePlatform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
 
 if (!gotSingleInstanceLock) {
   app.quit();
@@ -5604,7 +5619,7 @@ if (!gotSingleInstanceLock) {
   });
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    if (platform.lifecycle.quitWhenAllWindowsClosed) app.quit();
   });
 
   app.on('before-quit', (event) => {

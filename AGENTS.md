@@ -18,9 +18,9 @@
 | Renderer | `public/index.html` loads vendored classic scripts and `public/js/index-loader.js`, which concatenates ordered files under `public/js/modules/`. There is no renderer bundler or module loader. |
 | Shared-looking code | `server.js`, provider APIs, `cuefield/`, `dj-analyzer.js`, most renderer modules, `desktop/local-music-library.js`, and `desktop/login-easter-egg-gate.js`. Audit hidden OS assumptions before classifying them as shared. |
 | Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/system-memory.js`, `desktop/app-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
-| macOS code | No macOS platform module, application menu, entitlements, icon set, DMG configuration, signing, or notarization workflow exists yet. |
-| Tests | 31 flat `tests/*.js` files. They mix `node:test` tests with self-running assertion scripts. `scripts/quick-check.js` orchestrates selected tests plus extensive source guards. |
-| Automation | No `.github/workflows/`, standard `test` script, release script, or macOS build script exists. |
+| macOS code | `desktop/platform/macos/` now provides the initial capability/lifecycle adapter and explicit unsupported desktop-mode results. No macOS application menu, entitlements, icon set, DMG configuration, signing, or notarization workflow exists yet. |
+| Tests | Existing tests remain mostly flat and mix `node:test` with self-running assertion scripts. Platform contract tests now live under `tests/contracts/` and `tests/platform/`. `scripts/quick-check.js` still orchestrates selected tests plus extensive source guards. |
+| Automation | `test:platform` exists. No `.github/workflows/`, standard aggregate `test` script, release script, or macOS build script exists. |
 | Package manager | npm with `package-lock.json` lockfile version 3. No Node version, lint, formatter, or TypeScript configuration is pinned. |
 | Git | `origin` is the project fork. No `upstream` remote is configured at this inspection. |
 
@@ -35,6 +35,7 @@ Run commands from the repository root.
 | Install | `npm install` | Documented in `README.md`; updates must keep `package-lock.json` synchronized. |
 | Run | `npm start` | Runs `electron .`; current application support is Windows. |
 | Fast/static check | `node scripts/quick-check.js` | Runs syntax, selected tests, and source guards; it skips Electron runtime smoke. |
+| Platform contract tests | `npm run test:platform` | Runs the shared contract plus Windows/macOS adapter, IPC boundary, and renderer capability tests. |
 | Windows fast-check wrapper | `quick-check.bat` | Calls the same static check and pauses unless configured otherwise. |
 | Windows full smoke | `quick-check.bat full` or `node scripts/quick-check.js --electron` | Requires installed dev dependencies and Windows. The checker currently resolves only `node_modules/electron/dist/electron.exe`; real main-entry recovery is also Windows-only. |
 | One `node:test` file | `node --test tests/<node-test-file>.test.js` | Use only for files that import `node:test`. |
@@ -43,7 +44,7 @@ Run commands from the repository root.
 | Windows unpacked app | `npm run build:win:dir` | Builds a Windows directory target. |
 | Internal beta installer | `npm run build:win:internal-beta` | Uses `electron-builder.internal-beta.json`; never mix this artifact with a public release. |
 
-Do not claim `npm test`, `npm run smoke:*`, `npm run build:mac`, or a release command exists. The migration must add and document standard commands for shared, contract, Windows, macOS, Electron smoke, and Apple Silicon DMG validation; their exact package-script names are not defined yet.
+Do not claim `npm test`, `npm run smoke:*`, `npm run build:mac`, or a release command exists. The broader migration must still add and document commands for shared behavior, target-OS platform behavior, Electron smoke, and Apple Silicon DMG validation; their exact package-script names are not defined yet.
 
 At the 2026-08-04 inspection, `node scripts/quick-check.js` on macOS with Node 26.4.0 reached the tests but failed `tests/local-music-library-persistence.test.js`: the first FLAC metadata case returned title `Song` instead of `标签标题`. Record and explain the baseline on the host being used; do not hide an existing failure or claim the suite is green.
 

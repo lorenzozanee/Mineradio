@@ -3,6 +3,7 @@
 (function loadMineradioIndexModules() {
   const moduleCacheBust = String(Date.now());
   const modulePaths = [
+    'js/modules/00-state/00-platform-capabilities.js',
     'js/modules/00-state/00-core-stores.js',
     'js/modules/00-state/01-perf-render-state.js',
     'js/modules/00-state/02-preferences-ui-modes.js',
