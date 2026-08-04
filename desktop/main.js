@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
-const { createPlatform } = require('./platform');
+const { createPlatform, loadNativeDesktopFeatures } = require('./platform');
 const { registerPlatformIpc } = require('./platform/ipc');
 const {
   createExternalNavigationPolicy,
@@ -13,15 +13,15 @@ const {
 } = require('./shared/external-navigation-validation');
 const { resolveStartupQaUserDataPath } = require('./shared/startup-qa-paths');
 const {
+  FullDesktopModeRuntime,
   WallpaperEngineLibrary,
+  WallpaperEngineRuntime,
   registerWallpaperEngineScheme,
-} = require('./wallpaper-engine-library');
+} = loadNativeDesktopFeatures();
 const {
   LocalMusicLibrary,
   registerLocalMusicScheme,
 } = require('./local-music-library');
-const { WallpaperEngineRuntime } = require('./wallpaper-engine-runtime');
-const { FullDesktopModeRuntime } = require('./full-desktop-mode-runtime');
 const {
   LoginEasterEggGate,
   LOGIN_EASTER_EGG_GATE_VERSION,

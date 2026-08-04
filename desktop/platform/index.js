@@ -24,6 +24,21 @@ function createPlatform(options = {}) {
   throw error;
 }
 
+function loadNativeDesktopFeatures(options = {}) {
+  const nodePlatform = String(options.nodePlatform || process.platform);
+  const load = options.load || require;
+  if (nodePlatform === 'win32') {
+    return {
+      ...load('../wallpaper-engine-library'),
+      ...load('../wallpaper-engine-runtime'),
+      ...load('../full-desktop-mode-runtime'),
+    };
+  }
+  if (nodePlatform === 'darwin') return load('./macos/native-desktop-features');
+  throw new Error(`Unsupported native desktop feature platform: ${nodePlatform || 'unknown'}`);
+}
+
 module.exports = {
   createPlatform,
+  loadNativeDesktopFeatures,
 };
