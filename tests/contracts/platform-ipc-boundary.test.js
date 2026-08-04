@@ -97,6 +97,46 @@ test('desktop-mode IPC validates enabled and reason before side effects', async 
   assert.deepEqual(harness.calls, []);
 });
 
+test('desktop-mode IPC rejects accessor, custom-prototype, symbol, and non-string payloads', async () => {
+  const harness = createHarness();
+  const getterPayload = {};
+  Object.defineProperty(getterPayload, 'reason', {
+    enumerable: true,
+    get() { throw new Error('getter must not run'); },
+  });
+  const customPrototypePayload = Object.create({ reason: 'inherited' });
+  customPrototypePayload.reason = 'own';
+  const symbolPayload = { reason: 'safe' };
+  Object.defineProperty(symbolPayload, Symbol('unexpected'), { value: true, enumerable: true });
+  const handler = harness.handlers.get('mineradio-wallpaper-set-enabled');
+  for (const payload of [getterPayload, customPrototypePayload, symbolPayload, { reason: 42 }]) {
+    const result = await handler({ trusted: true }, true, payload);
+    assert.deepEqual(result, {
+      ok: false,
+      unsupported: false,
+      operation: 'enable',
+      error: 'PLATFORM_PAYLOAD_INVALID',
+    });
+  }
+  assert.deepEqual(harness.calls, []);
+});
+
+test('desktop-mode IPC rejects untrusted operational requests before capability or adapter access', async () => {
+  const harness = createHarness();
+  const event = { trusted: false };
+  const results = await Promise.all([
+    harness.handlers.get('mineradio-wallpaper-set-enabled')(event, true, { reason: 'blocked' }),
+    harness.handlers.get('mineradio-wallpaper-update')(event, { reason: 'blocked' }),
+    harness.handlers.get('mineradio-wallpaper-get-status')(event),
+  ]);
+  assert.deepEqual(results.map(result => result.error), [
+    'PLATFORM_UNTRUSTED_SENDER',
+    'PLATFORM_UNTRUSTED_SENDER',
+    'PLATFORM_UNTRUSTED_SENDER',
+  ]);
+  assert.deepEqual(harness.calls, []);
+});
+
 test('desktop-mode IPC normalizes payloads and delegates once', async () => {
   const harness = createHarness();
   const event = { trusted: true };

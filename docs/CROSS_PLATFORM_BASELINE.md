@@ -27,8 +27,8 @@ passes. Upstream `main` is one README-only commit ahead of the release and has n
 Current local evidence is for candidate `macos` commit `09e279c` plus the
 cross-platform check-orchestration fixes in the working tree:
 
-- `npm test`: 169 passed, 0 failed (87 shared core, 13 shared legacy,
-  56 platform/contract, 13 build).
+- `npm test`: 171 passed, 0 failed (87 shared core, 13 shared legacy,
+  58 platform/contract, 13 build).
 - `npm run test:smoke:macos`: 16 smoke-helper tests passed and the real arm64
   Electron main-entry smoke passed with an owned disposable profile.
 - `npm run build:mac:unsigned`, `npm run validate:mac:unsigned`, and

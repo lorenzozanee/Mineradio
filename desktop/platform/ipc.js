@@ -1,5 +1,7 @@
 'use strict';
 
+const { validateBoundedString, validatePlainRecord } = require('../shared/ipc-payload-validation');
+
 const PLATFORM_CHANNELS = Object.freeze([
   'mineradio-platform-capabilities',
   'mineradio-wallpaper-set-enabled',
@@ -36,9 +38,12 @@ function failedOperation(operation) {
 
 function normalizePayload(value, operation) {
   if (value == null) return { ok: true, value: {} };
-  if (typeof value !== 'object' || Array.isArray(value)) return invalidPayload(operation);
-  const reason = value.reason == null ? '' : String(value.reason).trim();
-  if (reason.length > 128) return invalidPayload(operation);
+  const record = validatePlainRecord(value, { maxKeys: 8, maxEntries: 8, maxDepth: 1 });
+  if (!record.ok) return invalidPayload(operation);
+  const rawReason = record.value.reason;
+  if (rawReason != null && typeof rawReason !== 'string') return invalidPayload(operation);
+  const reason = rawReason == null ? '' : rawReason.trim();
+  if (!validateBoundedString(reason, { maxLength: 128 }).ok) return invalidPayload(operation);
   return { ok: true, value: reason ? { reason } : {} };
 }
 
