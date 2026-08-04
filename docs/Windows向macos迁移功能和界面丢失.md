@@ -355,7 +355,19 @@
 - **迁移路径**: GitHub Settings → Environments → `release-signing` 中配置
 - **风险**: 低 — 纯配置，不影响代码
 
-#### 4.4 系统托盘不支持导致关闭行为异常
+#### 4.4 原始 main 分支共享测试在 macOS 未被验证 ⚠️ 新增
+
+- **用户影响**: 播放引擎、登录、Provider API、搜索、首页推荐等核心路径的回归风险未被覆盖。macOS 平台重构过程中若引入共享代码 Bug，不会被现有 CI 捕获
+- **Windows 实现位置**: 23 个共享测试（10 个 node:test 格式 + 12 个自运行 + 1 个 live smoke）存在于 main 分支，覆盖核心业务逻辑
+- **macOS 缺失原因**: macos 分支的 `npm test` 仅包含新编写的 shared/platform/contract/build 测试，未将原始共享测试纳入 `test:shared` 脚本
+- **证据**: `package.json` scripts.`test:shared` 仅列出 9 个文件；`git ls-tree --name-only main tests/` 显示 31 个原始测试文件
+- **迁移路径**:
+  1. 立即将 10 个 node:test 格式测试加入 `test:shared`（P0，<1 小时）
+  2. 创建 `test:legacy` 脚本批量运行 12 个自运行测试（P1）
+  3. 逐步转换自运行测试为 node:test 格式（P2）
+- **风险**: 低（纯 CI 配置变更，不影响业务代码）
+
+#### 4.5 系统托盘不支持导致关闭行为异常
 - **用户影响**: 当 `closeBehavior === 'tray'`（用户设置关闭到托盘）时，macOS 无托盘可用。主窗口关闭后行为不确定 — 应用可能退出或悬挂在后台且无法恢复
 - **Windows 实现位置**: `desktop/main.js` L2077-2107 `createOrUpdateTray()` 创建托盘图标 + 菜单；L5494 关闭事件中 `if (closeBehavior === 'tray')` hide 窗口
 - **macOS 缺失原因**: `desktop/platform/macos/index.js` L52 声明 `tray: false`；`createOrUpdateTray()` L2078 `if (!platform.supports('tray')) return;` 立即返回
@@ -368,19 +380,19 @@
 
 ### P1 — 显著影响体验
 
-#### 4.5 缺少 `.icns` 图标文件
+#### 4.6 缺少 `.icns` 图标文件
 - **用户影响**: macOS Dock/Finder 中图标在 Retina 显示器上模糊
 - **证据**: `build/macos/configuration.js` L42 `icon: "build/icon.png"` — PNG 无法提供 @2x 分辨率
 - **迁移路径**: 使用 `iconutil` 或 `png2icns` 从源素材生成 `build/icon.icns`
 - **风险**: 低
 
-#### 4.6 缺少 DMG 背景图
+#### 4.7 缺少 DMG 背景图
 - **用户影响**: DMG 挂载后显示空白 Finder 窗口，缺少拖拽安装视觉引导
 - **证据**: `build/macos/configuration.js` DMG 配置块无 `background` 属性
 - **迁移路径**: 设计品牌 DMG 背景图（带箭头指向 /Applications），配置到 electron-builder
 - **风险**: 低
 
-#### 4.7 macOS 自动更新未经实际验证
+#### 4.8 macOS 自动更新未经实际验证
 - **用户影响**: macOS 用户可能无法接收到应用内更新通知
 - **Windows 实现位置**: `server.js` update 模块（GitHub Release API + 多镜像）
 - **macOS 缺失原因**: 更新代码跨平台，但 macOS DMG 无 patch 路径；需验证完整 DMG 下载流程
@@ -391,7 +403,7 @@
   3. macOS 上只能使用完整 DMG 更新（无 .patch 文件）
 - **风险**: 中 — 需端到端验证
 
-#### 4.8 桌面歌词置顶级差异可能导致全屏应用下不可见
+#### 4.9 桌面歌词置顶级差异可能导致全屏应用下不可见
 - **用户影响**: 桌面歌词在 macOS 全屏应用下可能不可见（`'floating'` 级别低于 `'screen-saver'`）
 - **证据**: `desktop/platform/macos/index.js:configureDesktopLyricsWindow()` vs Windows 实现
 - **迁移路径**: 评估是否需要更高的置顶级；当前 `'floating'` 是 macOS 标准做法
@@ -399,18 +411,18 @@
 
 ### P2 — 改善体验
 
-#### 4.9 package.json 描述仍写 "Windows"
+#### 4.10 package.json 描述仍写 "Windows"
 - **用户影响**: 无（仅 npm 元数据）
 - **证据**: `package.json` L7: `"description": "Windows 沉浸式音乐播放器..."`
 - **迁移路径**: 改为通用描述
 
-#### 4.10 macOS 仅 arm64（无 Intel/Universal）
+#### 4.11 macOS 仅 arm64（无 Intel/Universal）
 - **用户影响**: Intel Mac 用户无法运行
 - **证据**: `build/macos/configuration.js` `arch: ['arm64']`
 - **迁移路径**: 评估是否需要 `arm64 + x64` Universal binary
 - **风险**: 低 — 策略决策
 
-#### 4.11 Wallpaper Engine 渲染器死代码 (~2300行)
+#### 4.12 Wallpaper Engine 渲染器死代码 (~2300行)
 - **用户影响**: 轻微增加 JS 解析时间（<100ms），无功能影响
 - **证据**: `public/js/modules/07-fx/03-wallpaper-engine-library.js`
 - **迁移路径**: 后续可条件加载，非紧急
@@ -575,6 +587,85 @@
 | macOS IME 行为（CJK） | MEDIUM | 添加中文/日文/韩文输入法组合窗口测试 |
 | macOS 辅助功能 | MEDIUM | 添加 AX API / VoiceOver 测试 |
 | macOS 自动更新路径 | MEDIUM | 验证 DMG 更新 + 无 patch 降级路径 |
+
+### 7.4 原始 main 分支测试在 macOS 的覆盖缺口 ⚠️ P0
+
+**严重性: P0** — main 分支 31 个原始测试中，macOS 分支的 `npm test` 仅覆盖 3 个。
+
+#### 7.4.1 已覆盖 (3/31)
+
+| 测试文件 | 覆盖方式 |
+|---------|---------|
+| `startup-qa-userdata-isolation.test.js` | 在 `test:shared` 中（已修改） |
+| `local-music-library-persistence.test.js` | 在 `test:shared` 中（已修改） |
+| `login-easter-egg-gate.test.js` | 在 `test:shared` 中（已修改） |
+
+#### 7.4.2 Windows 专属 — 正确排除，不应在 macOS 运行 (5/31)
+
+| 测试文件 | 测试内容 | 排除原因 |
+|---------|---------|---------|
+| `desktop-icon-shape-runtime.test.js` | 图标形状计算、保护盾、复杂度限制 | 依赖 HWND/Explorer 桌面图标网格 |
+| `desktop-native-icon-layer-runtime.test.js` | 原生分层窗口、PowerShell/C# 守卫、命名管道 | 依赖 LWA_COLORKEY/SetWindowPos/HWND_BOTTOM |
+| `full-desktop-mode-runtime.test.js` | WorkerW/Progman/DWM 注入、桌面图标可见性 | 47 处 Windows 内核 API 引用 |
+| `main-window-runtime-recovery.test.js` | 渲染进程崩溃恢复、main.js 源码守卫 | 正则检查 WE/desktop-mode 源码 — 但 macOS 崩溃恢复行为未测试 |
+| `wallpaper-engine-idle-dispose.test.js` | WE 运行时空闲处置 | 依赖 WallpaperEngineRuntime 真实实现 |
+
+> 注: `main-window-runtime-recovery.test.js` 有 5 处 Windows 引用，测试的是 main.js 中 WE/桌面模式代码的存在性。但 **渲染进程崩溃恢复本身是跨平台需求** — macOS 上缺少等效测试是单独缺口（见 7.3）。
+
+#### 7.4.3 共享业务逻辑 — 被 `npm test` 遗漏 (23/31) ⚠️
+
+这些测试**不依赖 Windows API**，测试的是跨平台业务逻辑。它们被遗漏纯粹是因为 macos 分支的测试基础设施重构未将其纳入。
+
+**A. node:test 格式 — 可立即加入 `test:shared` (10 个)**
+
+| 测试文件 | 测试的业务域 |
+|---------|------------|
+| `external-update-page-bridge.test.js` | 更新页面桥接 |
+| `home-daily-recommendation-virtualization.test.js` | 首页推荐虚拟化 |
+| `home-daily-recommendations-backend.test.js` | 推荐后端 |
+| `home-dashboard-update.test.js` | 首页仪表盘 |
+| `home-hero-mp4-platform-recommend.test.js` | Hero MP4 推荐 |
+| `qishui-passport-qr-login.test.js` | 汽水护照 QR 登录 |
+| `qishui-tier-rights.test.js` | 汽水等级权限 |
+| `search-frontend-pagination.test.js` | 搜索前端分页 |
+| `ui-default-theme-shelf-layer.test.js` | UI 默认主题/歌单架层级 |
+| `update-external-only.test.js` | 外部更新逻辑 |
+
+**B. 自运行格式 — 需 `node tests/xxx.test.js` 逐个执行 (12 个)**
+
+| 测试文件 | 测试的业务域 |
+|---------|------------|
+| `kugou-vip-hardening.test.js` | 酷狗 VIP 强化（web role/expiry/cache） |
+| `login-easter-egg-ime-focus.test.js` | 登录彩蛋 IME 焦点 |
+| `platform-account-sync-guard.test.js` | 平台账号同步守卫（源码正则检查） |
+| `playback-audio-graph-recovery.test.js` | 音频图恢复（AudioContext 生命周期） |
+| `playback-source-fallback-transaction.test.js` | 播放源回退事务 |
+| `provider-entitlement-boundary.test.js` | Provider 权益边界 |
+| `qishui-entitlement-cache.test.js` | 汽水权益缓存 |
+| `qishui-local-official-merge.test.js` | 汽水本地/官方合并 |
+| `qishui-provider-distribution.test.js` | 汽水 Provider 分发 |
+| `qq-vip-entitlement.test.js` | QQ VIP 权益 |
+| `spotify-api-resilience.test.js` | Spotify API 韧性 |
+| `startup-navigation-readiness.test.js` | 启动导航就绪 |
+
+**C. Live smoke — 需真实凭据 (1 个)**
+
+| 测试文件 | 说明 |
+|---------|------|
+| `qishui-passport-live-smoke.js` | 汽水通行证实况冒烟（需真实 Cookie/设备指纹） |
+
+#### 7.4.4 影响评估
+
+- **用户功能风险**: 23 个遗漏测试覆盖了播放引擎、登录流程、Provider API、首页推荐、搜索等核心用户路径。如果 macOS 平台重构过程中引入了共享代码回归，这些测试本应捕获但现在不会运行
+- **平台契约风险**: 部分测试（如 `platform-account-sync-guard.test.js`、`home-hero-mp4-platform-recommend.test.js`）包含对源码的禁止模式检查（如 DWM、Wallpaper Engine 关键字），这些检查对防止 Windows 代码泄露到共享层有价值
+- **修复难度**: 10 个 node:test 格式测试可立即加入 `test:shared`；12 个自运行测试需要逐个验证后转换或创建 batch runner
+
+#### 7.4.5 建议修复
+
+1. **P0 — 立即**: 将 10 个 node:test 格式测试加入 `test:shared` 脚本
+2. **P1 — 本周**: 创建 `test:legacy` 脚本批量运行 12 个自运行测试
+3. **P2 — 后续**: 将自运行测试逐步转换为 `node:test` 格式并纳入 `test:shared`
+4. **P2 — 后续**: 审核 `platform-account-sync-guard.test.js` 和 `home-hero-mp4-platform-recommend.test.js` 的禁止模式检查在 macOS 上下文是否仍然有效
 
 ### 7.5 IPC 合约测试覆盖缺口
 
