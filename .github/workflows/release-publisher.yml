@@ -66,8 +66,12 @@ jobs:
           set -euo pipefail
           run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${VALIDATION_RUN_ID}")"
           run_sha="$(jq -r .head_sha <<<"$run_json")"
+          run_name="$(jq -r .name <<<"$run_json")"
+          run_event="$(jq -r .event <<<"$run_json")"
           run_status="$(jq -r .status <<<"$run_json")"
           run_conclusion="$(jq -r .conclusion <<<"$run_json")"
+          test "$run_name" = 'Native package validation'
+          test "$run_event" = workflow_dispatch
           test "$run_sha" = "$CANDIDATE_SHA"
           test "$run_status" = completed
           test "$run_conclusion" = success

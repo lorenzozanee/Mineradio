@@ -62,6 +62,8 @@ test('native validation emits a manifest and publisher only reuses approved arti
   assert.match(publisher, /run-id: \$\{\{ inputs\.validation_run_id \}\}/);
   assert.match(publisher, /run_status.*completed/);
   assert.match(publisher, /run_conclusion.*success/);
+  assert.match(publisher, /run_name.*Native package validation/);
+  assert.match(publisher, /run_event.*workflow_dispatch/);
   assert.match(publisher, /test -f "release-input\/artifacts\/\$windows_name"/);
   assert.match(publisher, /sha256sum -c \.\.\/SHA256SUMS/);
   assert.match(publisher, /git tag -a/);
