@@ -24,12 +24,12 @@ passes. Upstream `main` is one README-only commit ahead of the release and has n
 - Locked electron-builder: 26.15.3
 - Locked music-metadata: 11.14.0
 
-Current local evidence is for candidate `macos` commit `f2729321331418533d673c08da6d99690c0111df` plus the
+Current local evidence is for candidate `macos` commit `7743fd85c998c59fbe001ce71b01b4f5806b6dfc` plus the
 cross-platform check-orchestration fixes in the working tree:
 
 - `npm test`: 171 passed, 0 failed (87 shared core, 13 shared legacy,
   58 platform/contract, 13 build).
-- GitHub Actions `Cross-platform CI` run `30894218424` passed for this exact
+- GitHub Actions `Cross-platform CI` run `30894875487` passed for this exact
   SHA on both `macos-15` and `windows-2025`; the Windows job passed shared,
   platform-contract, and build-configuration gates without changing the
   Windows test files.
