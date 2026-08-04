@@ -57,7 +57,7 @@ function createPlatformContract(options = {}) {
     throw new Error(`Unsupported platform contract: ${nodePlatform || 'unknown'}`);
   }
   assertService('lifecycle', options.lifecycle, ['configureApp', 'onReady', 'onActivate', 'cleanup']);
-  assertService('runtime', options.runtime, ['chromiumSwitches']);
+  assertService('runtime', options.runtime, ['chromiumSwitches', 'defaultCacheRoot']);
   assertService('shortcuts', options.shortcuts, ['configure', 'cleanup']);
   assertService('systemMemory', options.systemMemory, [
     'setNativeTempPath',
@@ -94,6 +94,7 @@ function createPlatformContract(options = {}) {
   const runtime = Object.freeze({
     caseInsensitivePaths: options.runtime.caseInsensitivePaths === true,
     chromiumSwitches: options.runtime.chromiumSwitches,
+    defaultCacheRoot: options.runtime.defaultCacheRoot,
   });
   const shortcuts = Object.freeze({
     configure: options.shortcuts.configure,

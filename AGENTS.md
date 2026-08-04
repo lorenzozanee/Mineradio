@@ -18,9 +18,9 @@
 | Renderer | `public/index.html` loads vendored classic scripts and `public/js/index-loader.js`, which concatenates ordered files under `public/js/modules/`. There is no renderer bundler or module loader. |
 | Shared-looking code | `server.js`, provider APIs, `cuefield/`, `dj-analyzer.js`, most renderer modules, `desktop/local-music-library.js`, and `desktop/login-easter-egg-gate.js`. Audit hidden OS assumptions before classifying them as shared. |
 | Windows code | `desktop/full-desktop-mode-runtime.js`, `desktop/desktop-*-runtime.js`, `desktop/wallpaper*-runtime.js`, `desktop/wallpaper-engine-library.js`, `desktop/platform/windows/system-memory.js`, Windows blocks in `desktop/main.js`, PowerShell/live-QA scripts, NSIS files, `build/after-pack.js`, `.ico`/BMP resources, and `rcedit`. |
-| macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, normalized global shortcuts, and explicit unsupported desktop-mode results. No entitlements, icon set, DMG configuration, signing, or notarization workflow exists yet. |
+| macOS code | `desktop/platform/macos/` provides capability/lifecycle and window adapters, a native application menu, Dock activation, native main-window controls, a desktop-lyrics panel, normalized global shortcuts, and explicit unsupported desktop-mode results. arm64 DMG configuration, minimum entitlements, protected signing/notarization hooks, and validators live under `build/macos/`. |
 | Tests | Existing tests remain mostly flat and mix `node:test` with self-running assertion scripts. Platform contract tests now live under `tests/contracts/` and `tests/platform/`. `scripts/quick-check.js` still orchestrates selected tests plus extensive source guards. |
-| Automation | `test`, `test:shared`, `test:platform`, and `test:smoke:macos` exist. No `.github/workflows/`, release script, or macOS build script exists yet. |
+| Automation | `test`, `test:shared`, `test:platform`, `test:build`, and `test:smoke:macos` exist. Dual-platform contract CI and manually dispatched native package validation workflows exist. No Release publisher exists. |
 | Package manager | npm with `package-lock.json` lockfile version 3. No Node version, lint, formatter, or TypeScript configuration is pinned. |
 | Git | `origin` is the project fork. `upstream` is configured as `https://github.com/XxHuberrr/Mineradio.git`; stable baseline `v2.1.0` resolves to commit `96091d123b36783f5604d1acd47b00b0708cabbd`. |
 
@@ -37,8 +37,12 @@ Run commands from the repository root.
 | Fast/static check | `node scripts/quick-check.js` | Runs syntax, selected tests, and source guards; it skips Electron runtime smoke. |
 | Shared behavior tests | `npm run test:shared` | Runs platform-independent dependency-injection, bounded IPC payload, and external-navigation policy tests without starting Electron. |
 | Platform contract tests | `npm run test:platform` | Runs the shared contract plus Windows/macOS adapter, IPC boundary, and renderer capability tests. |
-| Aggregate shared/contract tests | `npm test` | Runs `test:shared` and `test:platform`; it does not substitute for target-OS Electron or installer smoke. |
+| Aggregate shared/contract/build tests | `npm test` | Runs `test:shared`, `test:platform`, and `test:build`; it does not substitute for target-OS Electron or installer smoke. |
 | macOS arm64 Electron smoke | `npm run test:smoke:macos` | On Apple Silicon with installed dependencies, runs smoke helper tests and the isolated real main entry; other hosts skip explicitly. |
+| Build/CI contract tests | `npm run test:build` | Verifies macOS builder/signing configuration and GitHub Actions security boundaries without using credentials. |
+| macOS signed DMG | `npm run build:mac` | Apple Silicon only; requires Developer ID and App Store Connect API credentials and fails closed if unavailable. |
+| macOS local unsigned DMG | `npm run build:mac:unsigned` | Explicit local validation only; output goes to `dist-macos/` and is never a release candidate. |
+| Validate local unsigned DMG | `npm run validate:mac:unsigned` | Mounts the DMG and checks arm64 architecture, layout, content hygiene, and absolute-path leakage. |
 | Windows fast-check wrapper | `quick-check.bat` | Calls the same static check and pauses unless configured otherwise. |
 | Windows full smoke | `quick-check.bat full` or `node scripts/quick-check.js --electron` | Requires installed dev dependencies and Windows. The checker currently resolves only `node_modules/electron/dist/electron.exe`; real main-entry recovery is also Windows-only. |
 | One `node:test` file | `node --test tests/<node-test-file>.test.js` | Use only for files that import `node:test`. |

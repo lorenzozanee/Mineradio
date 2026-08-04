@@ -115,6 +115,12 @@ function appendBounded(current, chunk) {
   return `${current}${String(chunk || '')}`.slice(0, MAX_OUTPUT_BYTES);
 }
 
+function assertCleanRuntimeOutput(stderr) {
+  if (/No handler registered for 'mineradio-platform-capabilities'/.test(String(stderr || ''))) {
+    throw new Error('Platform capability IPC was disposed before the renderer stopped.');
+  }
+}
+
 function stopProcess(child, detached, signal) {
   if (!child || !Number.isInteger(child.pid) || child.pid <= 0) return;
   try {
@@ -257,6 +263,7 @@ async function runMacosMainEntrySmoke(options = {}) {
     if (result.timedOut) throw new Error(`macOS main-entry smoke timed out after ${options.timeoutMs || DEFAULT_TIMEOUT_MS}ms.`);
     if (result.error) throw result.error;
     if (result.code !== 0) throw new Error(`macOS main-entry smoke exited with ${result.code}; stderr: ${result.stderr.slice(0, 1200)}`);
+    assertCleanRuntimeOutput(result.stderr);
     const state = assertReadyStartup(paths);
     return {
       skipped: false,
@@ -272,6 +279,7 @@ async function runMacosMainEntrySmoke(options = {}) {
 }
 
 module.exports = {
+  assertCleanRuntimeOutput,
   assertReadyStartup,
   createSmokeEnvironment,
   createSmokePaths,

@@ -312,10 +312,7 @@ function cacheSettingsConfigPath() {
 }
 
 function defaultCacheRootPath() {
-  const dDrive = 'D:\\';
-  return fs.existsSync(dDrive)
-    ? path.join(dDrive, 'MineradioCache')
-    : path.join(app.getPath('userData'), 'cache');
+  return platform.runtime.defaultCacheRoot(app.getPath('userData'));
 }
 
 function normalizeCacheRootPath(value) {
@@ -5655,7 +5652,6 @@ if (!gotSingleInstanceLock) {
     event.preventDefault();
     if (appQuitCleanupPromise) return;
     const mainWindowAutosave = flushMainWindowFxAutosave('app-before-quit');
-    disposePlatformIpc();
     clearWallpaperEngineCaptureGrant();
     wallpaperEngineLibrary.dispose();
     stopMemoryAutoTimer();
@@ -5735,6 +5731,7 @@ if (!gotSingleInstanceLock) {
     });
     appQuitCleanupPromise = Promise.race([runtimeCleanup, timeoutCleanup]).finally(() => {
       if (cleanupTimeout) clearTimeout(cleanupTimeout);
+      disposePlatformIpc();
       appQuitCleanupComplete = true;
       app.quit();
     });

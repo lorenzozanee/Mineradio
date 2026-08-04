@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const { createPlatformContract, unsupportedResult } = require('../contract');
 const { installApplicationMenu } = require('./application-menu');
 const { createMacosGlobalShortcutService } = require('./shortcuts');
@@ -61,6 +62,7 @@ module.exports = function createMacosPlatform(options = {}) {
     runtime: {
       caseInsensitivePaths: false,
       chromiumSwitches: () => [],
+      defaultCacheRoot: userDataPath => path.join(userDataPath, 'cache'),
     },
     shortcuts,
     systemMemory,

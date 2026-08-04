@@ -27,6 +27,7 @@ function createMacConfiguration(env = process.env) {
       ...sharedConfiguration.files,
       '!build/**/*'
     ],
+    afterPack: 'build/macos/after-pack.js',
     afterSign: 'build/macos/notarize.js',
     mac: {
       category: 'public.app-category.music',
@@ -41,6 +42,11 @@ function createMacConfiguration(env = process.env) {
       hardenedRuntime: true,
       entitlements: 'build/macos/entitlements.plist',
       entitlementsInherit: 'build/macos/entitlements.plist',
+      extendInfo: {
+        NSCameraUsageDescription: 'Mineradio 仅在你开启手势控制时使用摄像头。',
+        NSCameraUseContinuityCameraDeviceType: true,
+        NSMicrophoneUsageDescription: 'Mineradio 仅在你开启音频监测功能时使用麦克风。',
+      },
       forceCodeSigning: !unsignedLocalBuild,
       notarize: false,
       ...(unsignedLocalBuild ? { identity: null } : {})

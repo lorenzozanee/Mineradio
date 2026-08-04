@@ -4,15 +4,15 @@
 
 Mineradio 的 macOS 分发目标只有 Apple Silicon (`arm64`) DMG。Windows x64 继续使用 `package.json` 中现有的 electron-builder 配置；macOS 使用根目录的 `electron-builder.macos.js`，不会加载 NSIS、`rcedit` 或其他 Windows 打包步骤。
 
-当前 `package.json` 还没有 `build:mac` 脚本。集成该脚本之前，从仓库根目录直接运行本文列出的 electron-builder 命令。
+`npm run build:mac` 是签名和公证的正式构建入口；缺少 Developer ID 或 Apple 公证凭据时会失败，不会自动降级为 unsigned。
 
 ## 本地 unsigned 验证构建
 
 本地检查布局时，可以显式关闭 Developer ID 签名和公证：
 
 ```bash
-MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD=1 npx electron-builder --config electron-builder.macos.js --mac dmg --arm64 --publish never
-node build/macos/validate-dmg.js --unsigned dist-macos/Mineradio-2.1.0-macOS-arm64.dmg
+npm run build:mac:unsigned
+npm run validate:mac:unsigned
 ```
 
 `MINERADIO_ALLOW_UNSIGNED_MACOS_BUILD` 只有精确值 `1` 才生效。未设置时 `forceCodeSigning` 为真，缺少 Developer ID 身份会使构建失败；它不是发布构建的降级路径。
@@ -36,7 +36,7 @@ node build/macos/validate-dmg.js --unsigned dist-macos/Mineradio-2.1.0-macOS-arm
 签名环境中的等价构建命令为：
 
 ```bash
-npx electron-builder --config electron-builder.macos.js --mac dmg --arm64 --publish never
+npm run build:mac
 node build/macos/validate-dmg.js dist-macos/Mineradio-2.1.0-macOS-arm64.dmg
 ```
 

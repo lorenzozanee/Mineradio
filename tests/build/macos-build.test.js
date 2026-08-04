@@ -8,6 +8,10 @@ const test = require('node:test');
 
 const { createMacConfiguration } = require('../../build/macos/configuration');
 const {
+  patchMacosHelperUsageDescriptions,
+  USAGE_DESCRIPTIONS,
+} = require('../../build/macos/after-pack');
+const {
   notarizeMacApp,
   readNotarizationCredentials
 } = require('../../build/macos/notarize');
@@ -25,11 +29,45 @@ test('macOS production configuration is arm64-only and fails closed without sign
   assert.equal(Object.hasOwn(config.mac, 'identity'), false);
   assert.equal(config.mac.hardenedRuntime, true);
   assert.equal(config.mac.notarize, false, 'custom afterSign hook owns notarization');
+  assert.deepEqual(config.mac.extendInfo, {
+    NSCameraUsageDescription: 'Mineradio 仅在你开启手势控制时使用摄像头。',
+    NSCameraUseContinuityCameraDeviceType: true,
+    NSMicrophoneUsageDescription: 'Mineradio 仅在你开启音频监测功能时使用麦克风。',
+  });
   assert.equal(config.afterSign, 'build/macos/notarize.js');
+  assert.equal(config.afterPack, 'build/macos/after-pack.js');
   assert.equal(config.win, undefined);
   assert.equal(config.nsis, undefined);
   assert.equal(config.publish, null);
   assert.ok(config.files.includes('!build/**/*'));
+});
+
+test('afterPack adds camera and microphone usage descriptions to every macOS helper', function() {
+  const entries = [
+    { name: 'Mineradio Helper.app', isDirectory: function() { return true; } },
+    { name: 'Mineradio Helper (Renderer).app', isDirectory: function() { return true; } },
+    { name: 'Unrelated.app', isDirectory: function() { return true; } },
+  ];
+  const calls = [];
+  const plists = patchMacosHelperUsageDescriptions({
+    electronPlatformName: 'darwin',
+    appOutDir: '/fixture/output',
+    packager: { appInfo: { productFilename: 'Mineradio' } },
+  }, {
+    readdirSync: function() { return entries; },
+    run: function(command, args) { calls.push([command, args]); },
+  });
+  assert.equal(plists.length, 2);
+  assert.equal(calls.length, 2 * Object.keys(USAGE_DESCRIPTIONS).length);
+  assert.ok(calls.every(function(call) { return call[0] === 'plutil' && call[1][0] === '-replace'; }));
+  assert.ok(calls.some(function(call) { return call[1].includes('NSCameraUseContinuityCameraDeviceType'); }));
+  assert.throws(function() {
+    patchMacosHelperUsageDescriptions({
+      electronPlatformName: 'darwin',
+      appOutDir: '/fixture/output',
+      packager: { appInfo: { productFilename: 'Mineradio' } },
+    }, { readdirSync: function() { return []; } });
+  }, /No macOS Electron helper/);
 });
 
 test('unsigned macOS output requires the explicit local opt-out', function() {

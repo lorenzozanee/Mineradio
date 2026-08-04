@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const { createPlatform } = require('../../../desktop/platform');
 
 test('macOS platform reports unsupported native desktop capabilities', async () => {
@@ -19,6 +20,7 @@ test('macOS platform reports unsupported native desktop capabilities', async () 
   assert.equal(platform.lifecycle.quitWhenAllWindowsClosed, false);
   assert.deepEqual(platform.lifecycle.configureApp(), { ok: true });
   assert.deepEqual(platform.runtime.chromiumSwitches(), []);
+  assert.equal(platform.runtime.defaultCacheRoot('/fixture/profile'), path.join('/fixture/profile', 'cache'));
   assert.equal(Object.hasOwn(platform.window.mainOptions(), 'icon'), false);
   for (const result of [
     await platform.desktopMode.enable({}),

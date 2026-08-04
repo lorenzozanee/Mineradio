@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { createPlatformContract } = require('../contract');
 const systemMemory = require('./system-memory');
 
@@ -53,6 +55,12 @@ module.exports = function createWindowsPlatform(options = {}) {
     runtime: {
       caseInsensitivePaths: true,
       chromiumSwitches: () => [['use-angle', 'd3d11']],
+      defaultCacheRoot: userDataPath => {
+        const dDrive = 'D:\\';
+        return fs.existsSync(dDrive)
+          ? path.join(dDrive, 'MineradioCache')
+          : path.join(userDataPath, 'cache');
+      },
     },
     shortcuts,
     systemMemory,

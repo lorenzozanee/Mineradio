@@ -39,6 +39,7 @@ function runtimeService() {
   return {
     caseInsensitivePaths: false,
     chromiumSwitches: () => [],
+    defaultCacheRoot: userDataPath => `${userDataPath}/cache`,
   };
 }
 
@@ -183,6 +184,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
     runtime: {
       caseInsensitivePaths: false,
       chromiumSwitches: () => [['fixture-switch', 'fixture-value']],
+      defaultCacheRoot: userDataPath => `${userDataPath}/fixture-cache`,
     },
     shortcuts: {
       configure: bindings => { calls.push(['shortcuts', bindings]); return { ok: true }; },
@@ -202,6 +204,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   assert.deepEqual(platform.window.mainOptions(), { titleBarStyle: 'hiddenInset' });
   assert.deepEqual(platform.runtime.chromiumSwitches(), [['fixture-switch', 'fixture-value']]);
   assert.equal(platform.runtime.caseInsensitivePaths, false);
+  assert.equal(platform.runtime.defaultCacheRoot('/fixture/profile'), '/fixture/profile/fixture-cache');
   assert.equal(platform.systemMemory.SYSTEM_PURGE_AVAILABLE, false);
   assert.deepEqual(platform.systemMemory.getMemorySnapshot(), { platform: 'darwin' });
   assert.deepEqual(platform.lifecycle.configureApp(), { ok: true });

@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const {
+  assertCleanRuntimeOutput,
   assertReadyStartup,
   createSmokePaths,
   createSmokeEnvironment,
@@ -181,4 +182,11 @@ test('bounded process runner terminates a timed-out process and reports the time
   });
   assert.equal(result.timedOut, true);
   assert.notEqual(result.code, 0);
+});
+
+test('real smoke runner treats early platform IPC disposal as a failure', async () => {
+  assert.doesNotThrow(function() { assertCleanRuntimeOutput('[StartupWindow] visible'); });
+  assert.throws(function() {
+    assertCleanRuntimeOutput("Error: No handler registered for 'mineradio-platform-capabilities'");
+  }, /disposed before the renderer stopped/);
 });
