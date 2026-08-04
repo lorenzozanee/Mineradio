@@ -52,6 +52,12 @@ cross-platform check-orchestration fixes in the working tree:
   tag uniqueness before creating an annotated Tag and Draft Release. The
   publisher never invokes a build; protected GitHub credentials and actual QA
   approvals are still required before it can run.
+- GitHub currently lists only `cross-platform-ci.yml` as an active workflow for
+  the fork's default-branch workflow inventory. The native validation and
+  publisher files are present on this candidate branch but are intentionally
+  not dispatched here; repository maintainers must expose them from the
+  protected/default-branch workflow policy before requesting signing or release
+  approvals.
 - Visible Apple Silicon QA covered first launch, native traffic lights, native
   menu, WebGL main scene, macOS fullscreen Space entry/exit, and `Cmd+Q` using
   an owned disposable profile. No provider login or real user data was used.
