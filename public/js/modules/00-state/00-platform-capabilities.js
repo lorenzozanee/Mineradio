@@ -10,12 +10,43 @@ function platformHasCapability(name) {
     && platformCapabilityState.capabilities[name] === true;
 }
 
+function platformCapabilityInteractiveElements(element) {
+  var selector = 'button, input, select, textarea';
+  var controls = [];
+  if (element && typeof element.matches === 'function' && element.matches(selector)) controls.push(element);
+  if (element && typeof element.querySelectorAll === 'function') {
+    element.querySelectorAll(selector).forEach(function (control) { controls.push(control); });
+  }
+  return controls;
+}
+
+function setPlatformCapabilityControlState(control, available) {
+  if (!control || typeof control.disabled !== 'boolean') return;
+  if (!available) {
+    if (!control.hasAttribute('data-platform-capability-disabled')) {
+      control.setAttribute('data-platform-capability-disabled', control.disabled ? '1' : '0');
+    }
+    control.disabled = true;
+    control.setAttribute('aria-disabled', 'true');
+    return;
+  }
+  var previousDisabled = control.getAttribute('data-platform-capability-disabled');
+  if (previousDisabled === '0' || previousDisabled === '1') {
+    control.disabled = previousDisabled === '1';
+    control.removeAttribute('data-platform-capability-disabled');
+  }
+  control.setAttribute('aria-disabled', control.disabled ? 'true' : 'false');
+}
+
 function applyPlatformCapabilityVisibility() {
   document.querySelectorAll('[data-platform-capability]').forEach(function (element) {
     var capability = element.getAttribute('data-platform-capability');
     var available = platformHasCapability(capability);
     element.hidden = !available;
     element.setAttribute('aria-hidden', available ? 'false' : 'true');
+    platformCapabilityInteractiveElements(element).forEach(function (control) {
+      setPlatformCapabilityControlState(control, available);
+    });
   });
 }
 

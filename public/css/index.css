@@ -474,6 +474,14 @@ body.desktop-shell #desktop-titlebar {
   pointer-events: none
 }
 
+html[data-platform="darwin"] body.desktop-shell #desktop-titlebar {
+  padding-left: 86px;
+}
+
+html[data-platform="darwin"] body.desktop-shell .desktop-window-controls [data-window-action] {
+  display: none !important;
+}
+
 body.desktop-shell #desktop-titlebar::after {
   content: none
 }
