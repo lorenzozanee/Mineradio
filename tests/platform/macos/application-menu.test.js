@@ -40,6 +40,12 @@ test('macOS application menu reports unavailable dependencies without throwing',
     ok: false,
     error: 'MACOS_APPLICATION_MENU_UNAVAILABLE',
   });
+  assert.deepEqual(installApplicationMenu({
+    Menu: { buildFromTemplate() {} },
+  }), {
+    ok: false,
+    error: 'MACOS_APPLICATION_MENU_UNAVAILABLE',
+  });
 });
 
 test('macOS activation restores the Dock when the API is available', () => {
@@ -50,6 +56,20 @@ test('macOS activation restores the Dock when the API is available', () => {
   });
   assert.deepEqual(platform.lifecycle.onActivate(), { ok: true });
   assert.equal(shown, 1);
+});
+
+test('macOS activation remains safe without a Dock and bounds Dock API errors', () => {
+  const withoutDock = createPlatform({ nodePlatform: 'darwin', app: {} });
+  assert.deepEqual(withoutDock.lifecycle.onActivate(), { ok: true });
+
+  const withFailingDock = createPlatform({
+    nodePlatform: 'darwin',
+    app: { dock: { show() { throw new Error('dock unavailable'); } } },
+  });
+  assert.deepEqual(withFailingDock.lifecycle.onActivate(), {
+    ok: false,
+    error: 'DOCK_ACTIVATION_FAILED',
+  });
 });
 
 test('macOS main window opts into native traffic lights', () => {
@@ -77,4 +97,24 @@ test('macOS desktop lyrics use a panel across fullscreen Spaces', () => {
     ['top', true, 'floating'],
     ['spaces', true, { visibleOnFullScreen: true }],
   ]);
+});
+
+test('macOS window configuration converts native API failures into bounded results', () => {
+  const platform = createPlatform({ nodePlatform: 'darwin' });
+  assert.deepEqual(platform.window.configureMainWindow({
+    setWindowButtonVisibility() { throw new Error('window closed'); },
+  }), {
+    ok: false,
+    error: 'WINDOW_CONFIGURATION_FAILED',
+  });
+  assert.deepEqual(platform.window.configureDesktopLyricsWindow({
+    setAlwaysOnTop() { throw new Error('window closed'); },
+  }), {
+    ok: false,
+    error: 'WINDOW_CONFIGURATION_FAILED',
+  });
+  assert.deepEqual(platform.window.configureDesktopLyricsWindow(null), {
+    ok: false,
+    error: 'WINDOW_UNAVAILABLE',
+  });
 });

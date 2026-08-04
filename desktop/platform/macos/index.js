@@ -41,7 +41,11 @@ module.exports = function createMacosPlatform(options = {}) {
       onReady: () => installApplicationMenu(options),
       onActivate: () => {
         if (options.app && options.app.dock && typeof options.app.dock.show === 'function') {
-          options.app.dock.show();
+          try {
+            options.app.dock.show();
+          } catch (_) {
+            return { ok: false, error: 'DOCK_ACTIVATION_FAILED' };
+          }
         }
         return { ok: true };
       },
