@@ -6,7 +6,7 @@ function createPlatform(options = {}) {
     return require('./windows')({ desktopMode: options.desktopMode });
   }
   if (nodePlatform === 'darwin') {
-    return require('./macos')();
+    return require('./macos')({ app: options.app, Menu: options.Menu });
   }
   const error = new Error(`Mineradio does not support platform: ${nodePlatform}`);
   error.code = 'MINERADIO_UNSUPPORTED_PLATFORM';

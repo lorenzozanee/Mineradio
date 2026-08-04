@@ -8,7 +8,7 @@ const {
 
 const SUPPORTED_NODE_PLATFORMS = new Set(['win32', 'darwin']);
 
-function unsupportedResult(nodePlatform, capability) {
+function unsupportedResult(nodePlatform, capability, operation = '') {
   if (!isCapabilityName(capability)) {
     throw new Error(`Unknown platform capability: ${String(capability || '')}`);
   }
@@ -27,6 +27,7 @@ function unsupportedResult(nodePlatform, capability) {
     enabled: false,
     platform: nodePlatform,
     capability,
+    operation: String(operation || ''),
     error: 'PLATFORM_CAPABILITY_UNSUPPORTED',
     status,
   };
@@ -40,6 +41,14 @@ function assertDesktopModeService(service) {
   });
 }
 
+function assertService(name, service, methods) {
+  methods.forEach((method) => {
+    if (!service || typeof service[method] !== 'function') {
+      throw new Error(`Platform ${name}.${method} must be a function`);
+    }
+  });
+}
+
 function createPlatformContract(options = {}) {
   const id = String(options.id || '');
   const nodePlatform = String(options.nodePlatform || '');
@@ -47,11 +56,27 @@ function createPlatformContract(options = {}) {
   if (!SUPPORTED_NODE_PLATFORMS.has(nodePlatform)) {
     throw new Error(`Unsupported platform contract: ${nodePlatform || 'unknown'}`);
   }
+  assertService('lifecycle', options.lifecycle, ['onReady', 'onActivate', 'cleanup']);
+  assertService('window', options.window, [
+    'mainOptions',
+    'configureMainWindow',
+    'desktopLyricsOptions',
+    'configureDesktopLyricsWindow',
+  ]);
   assertDesktopModeService(options.desktopMode);
 
   const capabilities = createCapabilities(options.capabilities);
   const lifecycle = Object.freeze({
-    quitWhenAllWindowsClosed: options.quitWhenAllWindowsClosed === true,
+    quitWhenAllWindowsClosed: options.lifecycle.quitWhenAllWindowsClosed === true,
+    onReady: options.lifecycle.onReady,
+    onActivate: options.lifecycle.onActivate,
+    cleanup: options.lifecycle.cleanup,
+  });
+  const window = Object.freeze({
+    mainOptions: options.window.mainOptions,
+    configureMainWindow: options.window.configureMainWindow,
+    desktopLyricsOptions: options.window.desktopLyricsOptions,
+    configureDesktopLyricsWindow: options.window.configureDesktopLyricsWindow,
   });
   const desktopMode = Object.freeze({
     enable: options.desktopMode.enable,
@@ -64,13 +89,14 @@ function createPlatformContract(options = {}) {
     nodePlatform,
     capabilities,
     lifecycle,
+    window,
     desktopMode,
     supports(capability) {
       if (!isCapabilityName(capability)) return false;
       return capabilities[capability] === true;
     },
-    unsupported(capability) {
-      return unsupportedResult(nodePlatform, capability);
+    unsupported(capability, operation) {
+      return unsupportedResult(nodePlatform, capability, operation);
     },
     snapshot() {
       return {

@@ -1,9 +1,33 @@
 'use strict';
 
 const { createPlatformContract, unsupportedResult } = require('../contract');
+const { installApplicationMenu } = require('./application-menu');
 
-module.exports = function createMacosPlatform() {
-  const desktopModeUnsupported = () => unsupportedResult('darwin', 'fullDesktopMode');
+function configureMainWindow(win) {
+  if (!win || typeof win.setWindowButtonVisibility !== 'function') return { ok: true };
+  try {
+    win.setWindowButtonVisibility(true);
+    return { ok: true };
+  } catch (_) {
+    return { ok: false, error: 'WINDOW_CONFIGURATION_FAILED' };
+  }
+}
+
+function configureDesktopLyricsWindow(win) {
+  if (!win || typeof win.setAlwaysOnTop !== 'function') return { ok: false, error: 'WINDOW_UNAVAILABLE' };
+  try {
+    win.setAlwaysOnTop(true, 'floating');
+    if (typeof win.setVisibleOnAllWorkspaces === 'function') {
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    }
+    return { ok: true };
+  } catch (_) {
+    return { ok: false, error: 'WINDOW_CONFIGURATION_FAILED' };
+  }
+}
+
+module.exports = function createMacosPlatform(options = {}) {
+  const desktopModeUnsupported = operation => unsupportedResult('darwin', 'fullDesktopMode', operation);
   return createPlatformContract({
     id: 'macos',
     nodePlatform: 'darwin',
@@ -12,11 +36,34 @@ module.exports = function createMacosPlatform() {
       wallpaperEngine: false,
       tray: false,
     },
-    quitWhenAllWindowsClosed: false,
+    lifecycle: {
+      quitWhenAllWindowsClosed: false,
+      onReady: () => installApplicationMenu(options),
+      onActivate: () => {
+        if (options.app && options.app.dock && typeof options.app.dock.show === 'function') {
+          options.app.dock.show();
+        }
+        return { ok: true };
+      },
+      cleanup: () => ({ ok: true }),
+    },
+    window: {
+      mainOptions: () => ({
+        frame: true,
+        titleBarStyle: 'hiddenInset',
+        trafficLightPosition: { x: 18, y: 18 },
+      }),
+      configureMainWindow,
+      desktopLyricsOptions: () => ({
+        type: 'panel',
+        hiddenInMissionControl: true,
+      }),
+      configureDesktopLyricsWindow,
+    },
     desktopMode: {
-      enable: desktopModeUnsupported,
-      disable: desktopModeUnsupported,
-      getStatus: desktopModeUnsupported,
+      enable: () => desktopModeUnsupported('enable'),
+      disable: () => desktopModeUnsupported('disable'),
+      getStatus: () => desktopModeUnsupported('getStatus'),
     },
   });
 };

@@ -6,6 +6,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
 const { createPlatform } = require('./platform');
+const { registerPlatformIpc } = require('./platform/ipc');
 const systemMemory = require('./system-memory');
 const {
   WallpaperEngineLibrary,
@@ -130,6 +131,8 @@ const KUGOU_LOGIN_URL = 'https://www.kugou.com/';
 const KUGOU_LOGIN_WARMUP_URL = 'https://www.kugou.com/newuc/user/uc/type=edit';
 const SPOTIFY_LOGIN_PARTITION = 'persist:mineradio-spotify-login';
 const platform = createPlatform({
+  app,
+  Menu,
   desktopMode: {
     enable: createWallpaperWindow,
     disable: closeWallpaperWindow,
@@ -3611,6 +3614,7 @@ function createDesktopLyricsWindow(payload = {}) {
     skipTaskbar: true,
     show: false,
     title: 'Mineradio Desktop Lyrics',
+    ...platform.window.desktopLyricsOptions(),
     webPreferences: {
       preload: path.join(__dirname, 'overlay-preload.js'),
       contextIsolation: true,
@@ -3619,11 +3623,9 @@ function createDesktopLyricsWindow(payload = {}) {
       backgroundThrottling: false,
     },
   });
-  try {
-    desktopLyricsWindow.setAlwaysOnTop(true, 'screen-saver');
-    desktopLyricsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  } catch (e) {
-    console.warn('Desktop lyrics topmost setup skipped:', e.message);
+  const desktopLyricsWindowSetup = platform.window.configureDesktopLyricsWindow(desktopLyricsWindow);
+  if (!desktopLyricsWindowSetup || desktopLyricsWindowSetup.ok !== true) {
+    console.warn('Desktop lyrics topmost setup skipped:', desktopLyricsWindowSetup && desktopLyricsWindowSetup.error || 'WINDOW_CONFIGURATION_FAILED');
   }
   startDesktopLyricsMousePoller();
   applyDesktopLyricsMouseBehavior();
@@ -3750,6 +3752,12 @@ function desktopModePlatformStatus(reason = 'renderer-query') {
   };
 }
 
+const disposePlatformIpc = registerPlatformIpc({
+  ipcMain,
+  platform,
+  isTrustedMainWindowIpc,
+});
+
 ipcMain.handle('desktop-window-minimize', async (event) => {
   const win = getSenderWindow(event);
   if (win === mainWindow && fullDesktopModeRuntime.getStatus('window-minimize').enabled === true) {
@@ -3803,11 +3811,6 @@ ipcMain.handle('desktop-window-exit-fullscreen-windowed', (event) => {
 
 ipcMain.handle('desktop-window-get-state', (event) => {
   return getWindowState(getSenderWindow(event));
-});
-
-ipcMain.handle('mineradio-platform-capabilities', (event) => {
-  if (!isTrustedMainWindowIpc(event)) return { ok: false, error: 'PLATFORM_UNTRUSTED_SENDER' };
-  return platform.snapshot();
 });
 
 ipcMain.on('mineradio-full-desktop-icon-shields', (event, payload = {}) => {
@@ -4757,26 +4760,6 @@ ipcMain.handle('mineradio-desktop-lyrics-move-by', async (_event, dx, dy) => {
   }
 });
 
-ipcMain.handle('mineradio-wallpaper-set-enabled', async (event, enabled, payload) => {
-  try {
-    if (!isTrustedMainWindowIpc(event)) return { ok: false, enabled: false, error: 'WALLPAPER_UNTRUSTED_SENDER' };
-    if (enabled) return await platform.desktopMode.enable(payload || {});
-    return await platform.desktopMode.disable('renderer-disabled');
-  } catch (e) {
-    return { ok: false, enabled: false, error: e.message || 'WALLPAPER_FAILED', status: fullDesktopModeRuntime.getStatus('ipc-failed') };
-  }
-});
-
-ipcMain.handle('mineradio-wallpaper-update', async (event) => {
-  if (!isTrustedMainWindowIpc(event)) return { ok: false, enabled: false, error: 'WALLPAPER_UNTRUSTED_SENDER' };
-  return platform.desktopMode.getStatus('renderer-update');
-});
-
-ipcMain.handle('mineradio-wallpaper-get-status', async (event) => {
-  if (!isTrustedMainWindowIpc(event)) return { ok: false, enabled: false, error: 'WALLPAPER_UNTRUSTED_SENDER' };
-  return platform.desktopMode.getStatus('renderer-query');
-});
-
 function configureLocalServerEnvironment(port) {
   process.env.HOST = '127.0.0.1';
   process.env.PORT = String(port);
@@ -5275,6 +5258,7 @@ async function createWindowOnce() {
 
   const initialBounds = getWindowedBounds();
   const initialMinimum = getAdaptiveWindowMinimumSize(screen.getPrimaryDisplay());
+  const platformMainWindowOptions = platform.window.mainOptions();
   const win = new BrowserWindow({
     ...initialBounds,
     minWidth: initialMinimum.width,
@@ -5290,6 +5274,7 @@ async function createWindowOnce() {
     autoHideMenuBar: true,
     title: APP_NAME,
     icon: APP_ICON_ICO,
+    ...platformMainWindowOptions,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -5299,6 +5284,10 @@ async function createWindowOnce() {
     },
   });
   mainWindow = win;
+  const mainWindowSetup = platform.window.configureMainWindow(win);
+  if (!mainWindowSetup || mainWindowSetup.ok !== true) {
+    console.warn('[Platform] main window setup skipped:', mainWindowSetup && mainWindowSetup.error || 'WINDOW_CONFIGURATION_FAILED');
+  }
   hookExplorerRestartForFullDesktop(win);
   writeStartupState('window-created', { windowCreatedAt: Date.now() });
 
@@ -5581,6 +5570,10 @@ if (!gotSingleInstanceLock) {
   });
 
   app.whenReady().then(async () => {
+    const lifecycleReady = await platform.lifecycle.onReady();
+    if (!lifecycleReady || lifecycleReady.ok !== true) {
+      console.warn('[Platform] ready setup incomplete:', lifecycleReady && lifecycleReady.error || 'PLATFORM_READY_FAILED');
+    }
     try {
       await localMusicLibrary.installProtocol(protocol);
     } catch (error) {
@@ -5612,6 +5605,10 @@ if (!gotSingleInstanceLock) {
   }).catch((e) => reportWindowCreationFailure('Main', e));
 
   app.on('activate', () => {
+    const lifecycleActivate = platform.lifecycle.onActivate();
+    if (lifecycleActivate && typeof lifecycleActivate.catch === 'function') {
+      lifecycleActivate.catch((error) => console.warn('[Platform] activate setup failed:', error && error.message || error));
+    }
     if (startupCompleted && focusMainWindow()) return;
     createWindow()
       .then(() => focusMainWindow())
@@ -5627,6 +5624,7 @@ if (!gotSingleInstanceLock) {
     if (appQuitCleanupComplete) return;
     event.preventDefault();
     if (appQuitCleanupPromise) return;
+    disposePlatformIpc();
     clearWallpaperEngineCaptureGrant();
     wallpaperEngineLibrary.dispose();
     stopMemoryAutoTimer();
@@ -5691,6 +5689,10 @@ if (!gotSingleInstanceLock) {
       }).catch((error) => {
         console.warn('[Wallpaper Engine] dispose failed:', error && error.message || error);
       });
+      const platformCleanup = await platform.lifecycle.cleanup();
+      if (!platformCleanup || platformCleanup.ok !== true) {
+        console.warn('[Platform] cleanup incomplete:', platformCleanup && platformCleanup.error || 'PLATFORM_CLEANUP_FAILED');
+      }
     })();
     const runtimeCleanup = fullDesktopAndWallpaperEngineCleanup;
     const timeoutCleanup = new Promise((resolve) => {
