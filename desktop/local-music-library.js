@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { createPathIdentity } = require('./shared/path-identity');
 const { Readable } = require('stream');
 
 const LOCAL_MUSIC_SCHEME = 'mineradio-local';
@@ -44,6 +45,7 @@ const COVER_MIME_BY_EXTENSION = new Map([
 ]);
 
 let musicMetadataModulePromise = null;
+const defaultPathIdentity = createPathIdentity();
 
 function registerLocalMusicScheme(protocol) {
   protocol.registerSchemesAsPrivileged([{
@@ -64,12 +66,6 @@ function normalizedAbsoluteFilePath(value) {
   return path.resolve(input);
 }
 
-function normalizedPathIdentity(value) {
-  const resolved = normalizedAbsoluteFilePath(value);
-  if (!resolved) return '';
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
-}
-
 function supportedAudioPath(value) {
   const resolved = normalizedAbsoluteFilePath(value);
   return resolved && AUDIO_MIME.has(path.extname(resolved).toLowerCase()) ? resolved : '';
@@ -80,8 +76,8 @@ function cleanText(value, fallback, maxLength = 1000) {
   return (text || String(fallback || '')).slice(0, maxLength);
 }
 
-function localFileId(filePath) {
-  return crypto.createHash('sha256').update(normalizedPathIdentity(filePath)).digest('hex').slice(0, 24);
+function localFileId(filePath, pathIdentity = defaultPathIdentity) {
+  return crypto.createHash('sha256').update(pathIdentity(filePath)).digest('hex').slice(0, 24);
 }
 
 function audioRevision(stat) {
@@ -237,13 +233,13 @@ function embeddedLyricText(common) {
   return '';
 }
 
-function normalizeImportEntries(input) {
+function normalizeImportEntries(input, pathIdentity) {
   const entries = [];
   const seen = new Set();
   for (const item of Array.isArray(input) ? input.slice(0, MAX_IMPORT_FILES) : []) {
     const requestedPath = typeof item === 'string' ? item : item && item.path;
     const filePath = supportedAudioPath(requestedPath);
-    const identity = normalizedPathIdentity(filePath);
+    const identity = pathIdentity(filePath);
     if (!filePath || !identity || seen.has(identity)) continue;
     seen.add(identity);
     entries.push({
@@ -274,7 +270,7 @@ async function defaultParseMetadata(filePath) {
   return module.parseFile(filePath, { duration: true, skipCovers: false });
 }
 
-async function buildLrcSidecarIndex(entries) {
+async function buildLrcSidecarIndex(entries, pathIdentity) {
   const directories = Array.from(new Set(entries.map((entry) => path.dirname(entry.path))));
   const maps = new Map();
   await mapWithConcurrency(directories, METADATA_CONCURRENCY, async (directory) => {
@@ -286,7 +282,7 @@ async function buildLrcSidecarIndex(entries) {
         lookup.set(path.basename(name, path.extname(name)).toLowerCase(), path.join(directory, name));
       }
     } catch (_) {}
-    maps.set(normalizedPathIdentity(directory), lookup);
+    maps.set(pathIdentity(directory), lookup);
   });
   return maps;
 }
@@ -298,6 +294,7 @@ class LocalMusicLibrary {
     this.coverDirectory = path.join(this.libraryDirectory, LOCAL_COVER_DIRECTORY);
     this.indexPath = path.join(this.userDataPath, LOCAL_LIBRARY_FILE);
     this.parseMetadata = typeof options.parseMetadata === 'function' ? options.parseMetadata : defaultParseMetadata;
+    this.pathIdentity = createPathIdentity({ caseInsensitive: options.caseInsensitivePaths === true });
     this.records = new Map();
     this.order = [];
     this.mediaToken = crypto.randomBytes(24).toString('hex');
@@ -318,7 +315,7 @@ class LocalMusicLibrary {
       for (const source of parsed.records.slice(0, MAX_IMPORT_FILES)) {
         const audioPath = supportedAudioPath(source && source.audioPath);
         const id = cleanText(source && source.id, '', 64).toLowerCase();
-        if (!audioPath || !/^[a-f0-9]{24}$/.test(id) || id !== localFileId(audioPath) || nextRecords.has(id)) continue;
+        if (!audioPath || !/^[a-f0-9]{24}$/.test(id) || id !== localFileId(audioPath, this.pathIdentity) || nextRecords.has(id)) continue;
         let coverPath = normalizedAbsoluteFilePath(source.coverPath);
         if (!coverPath || !isPathInside(this.coverDirectory, coverPath)) coverPath = '';
         const record = {
@@ -463,7 +460,7 @@ class LocalMusicLibrary {
       error.code = 'LOCAL_AUDIO_NOT_FILE';
       throw error;
     }
-    const id = localFileId(entry.path);
+    const id = localFileId(entry.path, this.pathIdentity);
     const previous = this.records.get(id);
     let metadata = {};
     let metadataError = '';
@@ -483,7 +480,7 @@ class LocalMusicLibrary {
         mime: previous && previous.coverMime || '',
       }
       : await this.stageCover(id, picture, previous);
-    const directoryLookup = sidecarDirectories.get(normalizedPathIdentity(path.dirname(entry.path)));
+    const directoryLookup = sidecarDirectories.get(this.pathIdentity(path.dirname(entry.path)));
     const sidecarPath = directoryLookup && directoryLookup.get(fallbackTitle.toLowerCase());
     let lyric = '';
     let lyricSource = '';
@@ -532,11 +529,11 @@ class LocalMusicLibrary {
   }
 
   importFiles(input, options = {}) {
-    const entries = normalizeImportEntries(input);
+    const entries = normalizeImportEntries(input, this.pathIdentity);
     const replace = options.replace === true;
     const operation = async () => {
       if (!entries.length) return { ok: false, count: 0, tracks: [], failures: [], error: 'NO_SUPPORTED_LOCAL_AUDIO' };
-      const sidecarDirectories = await buildLrcSidecarIndex(entries);
+      const sidecarDirectories = await buildLrcSidecarIndex(entries, this.pathIdentity);
       const parsed = await mapWithConcurrency(entries, METADATA_CONCURRENCY, async (entry) => {
         try {
           return await this.parseEntry(entry, sidecarDirectories);

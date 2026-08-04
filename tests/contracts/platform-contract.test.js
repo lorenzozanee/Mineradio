@@ -36,6 +36,7 @@ function windowService() {
 
 function runtimeService() {
   return {
+    caseInsensitivePaths: false,
     chromiumSwitches: () => [],
   };
 }
@@ -144,6 +145,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
       cleanup: async () => { calls.push('cleanup'); return { ok: true }; },
     },
     runtime: {
+      caseInsensitivePaths: false,
       chromiumSwitches: () => [['fixture-switch', 'fixture-value']],
     },
     shortcuts: {
@@ -162,6 +164,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   const lyricsWindow = { id: 'lyrics' };
   assert.deepEqual(platform.window.mainOptions(), { titleBarStyle: 'hiddenInset' });
   assert.deepEqual(platform.runtime.chromiumSwitches(), [['fixture-switch', 'fixture-value']]);
+  assert.equal(platform.runtime.caseInsensitivePaths, false);
   assert.deepEqual(platform.shortcuts.configure([{ action: 'togglePlay' }]), { ok: true });
   assert.deepEqual(platform.shortcuts.cleanup(), { ok: true });
   assert.deepEqual(platform.window.desktopLyricsOptions(), { type: 'panel' });

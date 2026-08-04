@@ -253,7 +253,7 @@ test('renderer and Electron wiring restore persistent tracks instead of blob-onl
   const cover = fs.readFileSync(path.join(appRoot, 'public', 'js', 'modules', '03-beat', '05-cover-loading-crop.js'), 'utf8');
   const packageJson = JSON.parse(fs.readFileSync(path.join(appRoot, 'package.json'), 'utf8'));
 
-  assert.match(main, /new LocalMusicLibrary\(\{ userDataPath: STABLE_USER_DATA_PATH \}\)/);
+  assert.match(main, /new LocalMusicLibrary\(\{[\s\S]*userDataPath: STABLE_USER_DATA_PATH,[\s\S]*caseInsensitivePaths: platform\.runtime\.caseInsensitivePaths/);
   assert.doesNotMatch(main, /mineradio-local-library-read-sync/);
   assert.match(main, /await localMusicLibrary\.listTracks\(\)/);
   assert.match(main, /mineradio-local-library-lyric/);

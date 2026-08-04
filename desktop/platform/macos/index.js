@@ -57,6 +57,7 @@ module.exports = function createMacosPlatform(options = {}) {
       cleanup: () => ({ ok: true }),
     },
     runtime: {
+      caseInsensitivePaths: false,
       chromiumSwitches: () => [],
     },
     shortcuts,

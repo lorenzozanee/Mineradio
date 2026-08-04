@@ -81,6 +81,7 @@ function createPlatformContract(options = {}) {
     configureDesktopLyricsWindow: options.window.configureDesktopLyricsWindow,
   });
   const runtime = Object.freeze({
+    caseInsensitivePaths: options.runtime.caseInsensitivePaths === true,
     chromiumSwitches: options.runtime.chromiumSwitches,
   });
   const shortcuts = Object.freeze({

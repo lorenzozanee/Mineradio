@@ -39,6 +39,7 @@ module.exports = function createWindowsPlatform(options = {}) {
       cleanup: successfulNoop,
     },
     runtime: {
+      caseInsensitivePaths: true,
       chromiumSwitches: () => [['use-angle', 'd3d11']],
     },
     shortcuts,
