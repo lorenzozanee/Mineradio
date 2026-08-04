@@ -34,12 +34,19 @@ function windowService() {
   };
 }
 
+function runtimeService() {
+  return {
+    chromiumSwitches: () => [],
+  };
+}
+
 test('platform contract exposes a bounded serializable capability snapshot', () => {
   const platform = createPlatformContract({
     id: 'fixture',
     nodePlatform: 'darwin',
     capabilities: { fullDesktopMode: false, wallpaperEngine: false, tray: false },
     lifecycle: lifecycleService(false),
+    runtime: runtimeService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   });
@@ -59,6 +66,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     nodePlatform: 'darwin',
     capabilities: { linuxDesktopMode: true },
     lifecycle: lifecycleService(),
+    runtime: runtimeService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /Unknown platform capabilities/);
@@ -67,6 +75,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     nodePlatform: 'darwin',
     capabilities: {},
     lifecycle: lifecycleService(),
+    runtime: runtimeService(),
     window: windowService(),
     desktopMode: {},
   }), /desktopMode\.enable/);
@@ -75,6 +84,7 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     nodePlatform: 'darwin',
     capabilities: {},
     lifecycle: {},
+    runtime: runtimeService(),
     window: windowService(),
     desktopMode: desktopModeService(),
   }), /lifecycle\.onReady/);
@@ -83,9 +93,19 @@ test('platform contract rejects unknown capabilities and incomplete services', (
     nodePlatform: 'darwin',
     capabilities: {},
     lifecycle: lifecycleService(),
+    runtime: runtimeService(),
     window: {},
     desktopMode: desktopModeService(),
   }), /window\.mainOptions/);
+  assert.throws(() => createPlatformContract({
+    id: 'fixture',
+    nodePlatform: 'darwin',
+    capabilities: {},
+    lifecycle: lifecycleService(),
+    runtime: {},
+    window: windowService(),
+    desktopMode: desktopModeService(),
+  }), /runtime\.chromiumSwitches/);
 });
 
 test('platform lifecycle and window services preserve adapter behavior', async () => {
@@ -100,6 +120,9 @@ test('platform lifecycle and window services preserve adapter behavior', async (
       onActivate: () => { calls.push('activate'); return { ok: true }; },
       cleanup: async () => { calls.push('cleanup'); return { ok: true }; },
     },
+    runtime: {
+      chromiumSwitches: () => [['fixture-switch', 'fixture-value']],
+    },
     window: {
       mainOptions: () => ({ titleBarStyle: 'hiddenInset' }),
       configureMainWindow: win => { calls.push(['main', win]); return { ok: true }; },
@@ -111,6 +134,7 @@ test('platform lifecycle and window services preserve adapter behavior', async (
   const mainWindow = { id: 'main' };
   const lyricsWindow = { id: 'lyrics' };
   assert.deepEqual(platform.window.mainOptions(), { titleBarStyle: 'hiddenInset' });
+  assert.deepEqual(platform.runtime.chromiumSwitches(), [['fixture-switch', 'fixture-value']]);
   assert.deepEqual(platform.window.desktopLyricsOptions(), { type: 'panel' });
   assert.deepEqual(platform.window.configureMainWindow(mainWindow), { ok: true });
   assert.deepEqual(platform.window.configureDesktopLyricsWindow(lyricsWindow), { ok: true });

@@ -57,6 +57,7 @@ function createPlatformContract(options = {}) {
     throw new Error(`Unsupported platform contract: ${nodePlatform || 'unknown'}`);
   }
   assertService('lifecycle', options.lifecycle, ['onReady', 'onActivate', 'cleanup']);
+  assertService('runtime', options.runtime, ['chromiumSwitches']);
   assertService('window', options.window, [
     'mainOptions',
     'configureMainWindow',
@@ -78,6 +79,9 @@ function createPlatformContract(options = {}) {
     desktopLyricsOptions: options.window.desktopLyricsOptions,
     configureDesktopLyricsWindow: options.window.configureDesktopLyricsWindow,
   });
+  const runtime = Object.freeze({
+    chromiumSwitches: options.runtime.chromiumSwitches,
+  });
   const desktopMode = Object.freeze({
     enable: options.desktopMode.enable,
     disable: options.desktopMode.disable,
@@ -89,6 +93,7 @@ function createPlatformContract(options = {}) {
     nodePlatform,
     capabilities,
     lifecycle,
+    runtime,
     window,
     desktopMode,
     supports(capability) {

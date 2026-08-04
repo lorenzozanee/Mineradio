@@ -47,6 +47,9 @@ module.exports = function createMacosPlatform(options = {}) {
       },
       cleanup: () => ({ ok: true }),
     },
+    runtime: {
+      chromiumSwitches: () => [],
+    },
     window: {
       mainOptions: () => ({
         frame: true,

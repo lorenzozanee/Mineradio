@@ -3,7 +3,10 @@
 function createPlatform(options = {}) {
   const nodePlatform = String(options.nodePlatform || process.platform);
   if (nodePlatform === 'win32') {
-    return require('./windows')({ desktopMode: options.desktopMode });
+    return require('./windows')({
+      appIcon: options.appIcon,
+      desktopMode: options.desktopMode,
+    });
   }
   if (nodePlatform === 'darwin') {
     return require('./macos')({ app: options.app, Menu: options.Menu });

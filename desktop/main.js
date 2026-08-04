@@ -132,6 +132,7 @@ const KUGOU_LOGIN_WARMUP_URL = 'https://www.kugou.com/newuc/user/uc/type=edit';
 const SPOTIFY_LOGIN_PARTITION = 'persist:mineradio-spotify-login';
 const platform = createPlatform({
   app,
+  appIcon: APP_ICON_ICO,
   Menu,
   desktopMode: {
     enable: createWallpaperWindow,
@@ -482,7 +483,6 @@ const CHROMIUM_SAFE_PERFORMANCE_SWITCHES = [
   ['enable-oop-rasterization'],
   ['enable-zero-copy'],
   ['enable-accelerated-2d-canvas'],
-  ['use-angle', 'd3d11'],
 ];
 const CHROMIUM_OPT_IN_PERFORMANCE_SWITCHES = [
   ['ignore-gpu-blocklist', null, 'MINERADIO_IGNORE_GPU_BLOCKLIST'],
@@ -496,6 +496,7 @@ function appendChromiumSwitch(name, value) {
   else app.commandLine.appendSwitch(name, value);
 }
 for (const [name, value] of CHROMIUM_SAFE_PERFORMANCE_SWITCHES) appendChromiumSwitch(name, value);
+for (const [name, value] of platform.runtime.chromiumSwitches()) appendChromiumSwitch(name, value);
 for (const [name, value, envName] of CHROMIUM_OPT_IN_PERFORMANCE_SWITCHES) {
   if (process.env[envName] === '1') appendChromiumSwitch(name, value);
 }
@@ -5273,7 +5274,6 @@ async function createWindowOnce() {
     hasShadow: true,
     autoHideMenuBar: true,
     title: APP_NAME,
-    icon: APP_ICON_ICO,
     ...platformMainWindowOptions,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -5401,6 +5401,7 @@ async function createWindowOnce() {
     scheduleWallpaperEngineHostBoundsRestart(win, 'resize');
   });
   win.on('close', (event) => {
+    if (appQuitting) return;
     const desktopMode = fullDesktopModeRuntime.getStatus('main-window-close');
     if (desktopMode.enabled === true) {
       event.preventDefault();
@@ -5624,6 +5625,7 @@ if (!gotSingleInstanceLock) {
     if (appQuitCleanupComplete) return;
     event.preventDefault();
     if (appQuitCleanupPromise) return;
+    const mainWindowAutosave = flushMainWindowFxAutosave('app-before-quit');
     disposePlatformIpc();
     clearWallpaperEngineCaptureGrant();
     wallpaperEngineLibrary.dispose();
@@ -5678,6 +5680,7 @@ if (!gotSingleInstanceLock) {
     };
     let cleanupTimeout = null;
     const fullDesktopAndWallpaperEngineCleanup = (async () => {
+      await mainWindowAutosave;
       // A passive desktop host must become a verified top-level HWND before
       // its exact WE source/DWM companion is disposed. Running these in
       // parallel can race the native detach acknowledgement.

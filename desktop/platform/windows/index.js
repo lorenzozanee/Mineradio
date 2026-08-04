@@ -34,8 +34,11 @@ module.exports = function createWindowsPlatform(options = {}) {
       onActivate: successfulNoop,
       cleanup: successfulNoop,
     },
+    runtime: {
+      chromiumSwitches: () => [['use-angle', 'd3d11']],
+    },
     window: {
-      mainOptions: () => ({}),
+      mainOptions: () => options.appIcon ? { icon: options.appIcon } : {},
       configureMainWindow: successfulNoop,
       desktopLyricsOptions: () => ({}),
       configureDesktopLyricsWindow,
