@@ -16,7 +16,9 @@ function readPackage() {
 test('untrusted pull requests run secret-free contracts on both target operating systems', function() {
   const workflow = readWorkflow('cross-platform-ci.yml');
   assert.match(workflow, /^\s*pull_request:\s*$/m);
-  assert.match(workflow, /branches:\n\s+- main\n\s+- macos\n\s+- codex\/macos/);
+  const protectedBranchFilter = /branches:\r?\n\s+- main\r?\n\s+- macos\r?\n\s+- codex\/macos/;
+  assert.match(workflow, protectedBranchFilter);
+  assert.match(workflow.replace(/\n/g, '\r\n'), protectedBranchFilter);
   assert.match(workflow, /windows-2025/);
   assert.match(workflow, /macos-15/);
   assert.match(workflow, /npm run test:shared/);
