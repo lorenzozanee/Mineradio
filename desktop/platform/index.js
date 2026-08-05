@@ -38,7 +38,13 @@ function loadNativeDesktopFeatures(options = {}) {
   throw new Error(`Unsupported native desktop feature platform: ${nodePlatform || 'unknown'}`);
 }
 
+function getLoginWindowIcon() {
+  if (process.platform === 'darwin') return null;
+  return path.join(__dirname, '..', '..', 'build', 'icon.ico');
+}
+
 module.exports = {
   createPlatform,
   loadNativeDesktopFeatures,
+  getLoginWindowIcon,
 };

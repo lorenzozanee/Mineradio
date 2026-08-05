@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
-const { createPlatform, loadNativeDesktopFeatures } = require('./platform');
+const { createPlatform, loadNativeDesktopFeatures, getLoginWindowIcon } = require('./platform');
 const { registerPlatformIpc } = require('./platform/ipc');
 const {
   createExternalNavigationPolicy,
@@ -101,6 +101,7 @@ const APP_METADATA = APP_PACKAGE_INFO.mineradio || {};
 const APP_NAME = process.env.MINERADIO_RUNTIME_NAME || APP_METADATA.runtimeName || APP_PACKAGE_INFO.productName || 'Mineradio';
 const APP_USER_MODEL_ID = process.env.MINERADIO_APP_USER_MODEL_ID || APP_METADATA.appUserModelId || (APP_PACKAGE_INFO.build && APP_PACKAGE_INFO.build.appId) || 'com.mineradio.desktop';
 const APP_ICON_ICO = path.join(__dirname, '..', 'build', 'icon.ico');
+const loginWindowIcon = getLoginWindowIcon();
 const CURRENT_FX_AUTOSAVE_FILE = 'current-fx-autosave.json';
 const CURRENT_FX_AUTOSAVE_MAX_BYTES = 12 * 1024 * 1024;
 const STARTUP_ERROR_LOG_FILE = 'startup-error.log';
@@ -2490,7 +2491,7 @@ async function openNeteaseMusicLoginWindow(owner) {
       autoHideMenuBar: true,
       title: '网易云音乐登录',
       backgroundColor: '#111111',
-      icon: APP_ICON_ICO,
+      icon: loginWindowIcon,
       webPreferences: {
         partition: NETEASE_LOGIN_PARTITION,
         contextIsolation: true,
@@ -2604,7 +2605,7 @@ async function openQQMusicLoginWindow(owner, options) {
       autoHideMenuBar: true,
       title: 'QQ 音乐登录',
       backgroundColor: '#111111',
-      icon: APP_ICON_ICO,
+      icon: loginWindowIcon,
       webPreferences: {
         partition: QQ_LOGIN_PARTITION,
         contextIsolation: true,
@@ -2680,7 +2681,7 @@ async function openQQMusicLoginWindow(owner, options) {
           show: false,
           autoHideMenuBar: true,
           backgroundColor: '#111111',
-          icon: APP_ICON_ICO,
+          icon: loginWindowIcon,
           webPreferences: {
             partition: QQ_LOGIN_PARTITION,
             contextIsolation: true,
@@ -2734,7 +2735,7 @@ async function openQQMusicLoginWindow(owner, options) {
               show: true,
               autoHideMenuBar: true,
               backgroundColor: '#111111',
-              icon: APP_ICON_ICO,
+              icon: loginWindowIcon,
               webPreferences: {
                 partition: QQ_LOGIN_PARTITION,
                 contextIsolation: true,
@@ -2825,7 +2826,7 @@ async function openKugouMusicLoginWindow(owner) {
       autoHideMenuBar: true,
       title: '酷狗音乐登录',
       backgroundColor: '#111111',
-      icon: APP_ICON_ICO,
+      icon: loginWindowIcon,
       webPreferences: {
         partition: KUGOU_LOGIN_PARTITION,
         contextIsolation: true,
@@ -3160,7 +3161,7 @@ async function openSpotifyMusicLoginWindow(owner) {
       autoHideMenuBar: true,
       title: 'Spotify 授权',
       backgroundColor: '#101414',
-      icon: APP_ICON_ICO,
+      icon: loginWindowIcon,
       webPreferences: {
         partition: SPOTIFY_LOGIN_PARTITION,
         contextIsolation: true,
